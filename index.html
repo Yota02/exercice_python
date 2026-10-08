@@ -57,6 +57,16 @@ pre{background:var(--code-bg);border:1px solid #334155;border-radius:12px;paddin
 .review-item{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:12px;font-size:.9rem}
 .review-item.ok{border-left:4px solid var(--good)}.review-item.ko{border-left:4px solid var(--bad)}
 .review-item pre{font-size:.8rem;padding:10px;margin:8px 0}
+.themes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.theme{display:flex;gap:8px;align-items:center;background:#0f172a;border:1px solid #334155;border-radius:10px;padding:9px 10px;font-size:.9rem;cursor:pointer;user-select:none}
+.theme input{accent-color:#38bdf8;width:16px;height:16px}
+.theme small{color:var(--muted);margin-left:auto}
+.theme-actions{display:flex;gap:8px;margin-top:8px}
+.mini{flex:1;padding:8px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:var(--muted);cursor:pointer;font-size:.85rem}
+.mini:hover{border-color:var(--accent);color:var(--text)}
+.lvl-tag{font-size:.7rem;padding:2px 8px;border-radius:999px;border:1px solid #334155;color:var(--muted);margin-left:8px;vertical-align:middle}
+#stats-line{margin-top:12px;font-size:.85rem;color:var(--muted)}
+.per-cat{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
 footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:16px}
 @media(max-width:500px){.card{padding:18px}header h1{font-size:1.5rem}}
 </style>
@@ -71,18 +81,24 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:16px}
 <!-- ACCUEIL -->
 <div id="screen-start" class="card">
 <h2>Bienvenue 👋</h2>
-<p style="color:var(--muted);margin-top:8px;line-height:1.6">260 questions niveau <b>Débutant+</b> : que fait ce programme ? quelle est la sortie ? + théorie.<br>4 réponses par question, correction détaillée, timer.</p>
-<div class="badges"><span class="badge">🔁 boucles</span><span class="badge">📦 listes / dicts</span><span class="badge">⚙️ fonctions</span><span class="badge">⚠️ erreurs</span><span class="badge">📁 fichiers</span><span class="badge">🔤 strings</span><span class="badge" id="total-count">📚 260 questions</span></div>
+<p style="color:var(--muted);margin-top:8px;line-height:1.6"><b id="total-count2">197</b> questions uniques niveau <b>Débutant / Intermédiaire</b> : que fait ce programme ? quelle est la sortie ? + théorie.<br>4 réponses par question, correction détaillée, timer.</p>
+<div class="opt-title">Thèmes <span style="text-transform:none">(décoche pour filtrer)</span></div>
+<div class="themes" id="theme-list"></div>
+<div class="theme-actions"><button class="mini" id="themes-all" type="button">Tout cocher</button><button class="mini" id="themes-none" type="button">Tout décocher</button></div>
+<div class="opt-title">Niveau</div>
+<select id="level-select"><option value="all">Tous niveaux</option><option value="1">🟢 Débutant</option><option value="2">🟡 Intermédiaire</option></select>
 <div class="opt-title">Nombre de questions</div>
-<select id="nb-questions"><option value="10">10 questions (rapide)</option><option value="20" selected>20 questions (standard)</option><option value="50">50 questions (marathon)</option><option value="100">100 questions (extrême)</option><option value="260">260 questions (TOUT)</option></select>
+<select id="nb-questions"><option value="10">10 questions (rapide)</option><option value="20" selected>20 questions (standard)</option><option value="50">50 questions (marathon)</option><option value="100">100 questions (extrême)</option><option value="197">197 questions (TOUT)</option></select>
 <div class="opt-title">Temps par question</div>
 <select id="timer-select"><option value="15">15 s — difficile</option><option value="30" selected>30 s — normal</option><option value="60">60 s — tranquille</option><option value="0">Sans timer</option></select>
 <button class="btn btn-primary" id="start-btn">▶ Commencer le quiz</button>
+<button class="btn btn-secondary btn hidden" id="retry-btn">🔁 Rejouer mes erreurs (<span id="retry-count">0</span>)</button>
+<div id="stats-line"></div>
 </div>
 
 <!-- QUIZ -->
 <div id="screen-quiz" class="card hidden">
-<div class="topbar"><span id="q-counter">Question 1/20</span><span class="tag" id="q-cat">boucles</span><span id="q-score">Score : 0</span></div>
+<div class="topbar"><span id="q-counter">Question 1/20</span><span><span class="tag" id="q-cat">boucles</span><span class="lvl-tag" id="q-lvl">N1</span></span><span id="q-score">Score : 0</span></div>
 <div class="progress"><div id="progress-fill"></div></div>
 <div class="timer-wrap" id="timer-wrap"><div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div><span id="timer-text">30s</span></div>
 <div class="question" id="q-text"></div>
@@ -98,9 +114,11 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:16px}
 <div class="score-big" id="final-score">0/20</div>
 <div class="score-sub" id="final-msg"></div>
 <div class="badges" style="justify-content:center"><span class="badge" id="stat-time"></span><span class="badge" id="stat-good"></span><span class="badge" id="stat-bad"></span></div>
+<div class="per-cat" id="per-cat"></div>
 <h3 style="margin-top:18px">📝 Correction détaillée</h3>
 <div class="review" id="review"></div>
-<button class="btn btn-primary" id="restart-btn">🔄 Recommencer</button>
+<button class="btn btn-primary" id="retry-errors-btn">🔁 Rejouer mes erreurs de cette session</button>
+<button class="btn btn-primary" id="restart-btn">🔄 Recommencer (mêmes réglages)</button>
 <button class="btn btn-secondary btn" id="home-btn">← Retour à l'accueil</button>
 </div>
 
@@ -109,280 +127,278 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:16px}
 
 <script>
 const QUESTIONS = [
-{q:"Que va afficher ce programme ?",code:`x = 5\ny = 2\nprint(x * y + 1)`,answers:["11","12","10","7"],correct:0,cat:"variables",explain:"x * y = 10, +1 = 11. La multiplication est prioritaire, mais ici il n'y a que ça."},
-{q:"Que va afficher ce programme ?",code:`for i in range(3):\n    print(i)`,answers:["0 1 2","1 2 3","0 1 2 3","3 2 1"],correct:0,cat:"boucles",explain:"range(3) génère 0, 1, 2. Il s'arrête AVANT 3."},
-{q:"Quelle est la sortie ?",code:`fruits = ["pomme", "banane", "cerise"]\nprint(len(fruits))\nprint(fruits[1])`,answers:["3 puis banane","2 puis pomme","3 puis cerise","Erreur d'index"],correct:0,cat:"listes",explain:"len = 3 éléments. fruits[1] = 2e élément = 'banane' (index 0 = pomme)."},
-{q:"Que fait ce programme ?",code:`n = 7\nif n % 2 == 0:\n    print("pair")\nelse:\n    print("impair")`,answers:["Affiche impair","Affiche pair","Affiche True","Erreur de syntaxe"],correct:0,cat:"conditions",explain:"7 % 2 = 1, donc != 0 → branche else → 'impair'. % donne le reste."},
-{q:"Que retourne / affiche cette fonction ?",code:`def double(n):\n    return n * 2\n\nprint(double(4))`,answers:["8","4","None","n * 2"],correct:0,cat:"fonctions",explain:"double(4) = 4*2 = 8, print affiche 8. return renvoie la valeur."},
-{q:"Quelle est la sortie ?",code:`d = {"nom": "Léa", "âge": 20}\nprint(d["nom"])\nprint(d.get("ville", "inconnu"))`,answers:["Léa puis inconnu","Léa puis None","Erreur KeyError","Léa puis ville"],correct:0,cat:"dicts",explain:"d['nom']='Léa'. .get('ville','inconnu') renvoie la valeur par défaut car la clé n'existe pas, sans erreur."},
-{q:"Que va afficher ce code ?",code:`try:\n    print(10 / 0)\nexcept ZeroDivisionError:\n    print("division impossible")`,answers:["division impossible","0","Erreur non capturée","None"],correct:0,cat:"erreurs",explain:"10/0 lève ZeroDivisionError, capturée par except → affiche le message au lieu de crasher."},
-{q:"Que signifie ce mode d'ouverture ?",code:`f = open("notes.txt", "w")`,answers:["Écriture (écrase le fichier)","Lecture seule","Ajout à la fin","Lecture + écriture binaire"],correct:0,cat:"fichiers",explain:"'w' = write : crée ou ÉCRASE le fichier. 'r' = lecture, 'a' = append (ajout)."},
-{q:"Combien de tours fait cette boucle ?",code:`i = 0\nwhile i < 5:\n    i += 1\nprint(i)`,answers:["5 tours, affiche 5","4 tours, affiche 4","Boucle infinie","6 tours, affiche 6"],correct:0,cat:"boucles",explain:"i passe de 0 à 5 : 5 incrémentations. Condition i<5 fausse quand i=5 → affiche 5."},
-{q:"Quelle est la sortie ?",code:`mot = "Python"\nprint(mot[0:3])\nprint(mot.upper())`,answers:["Pyt puis PYTHON","Pyt puis Python","PytH puis PYTHON","Erreur de slice"],correct:0,cat:"strings",explain:"mot[0:3] = caractères 0,1,2 = 'Pyt'. .upper() met tout en majuscules."},
-{q:"Que vaut `resultat` ?",code:`nombres = [1, 2, 3]\nnombres.append(4)\nresultat = len(nombres)`,answers:["4","[1,2,3,4]","3","None"],correct:0,cat:"listes",explain:".append(4) ajoute à la fin → [1,2,3,4], len = 4. Théorie : append modifie sur place, ne retourne rien."},
-{q:"Quelle erreur ce code provoque-t-il ?",code:`age = "20"\nprint(age + 5)`,answers:["TypeError : str + int impossible","ValueError","Affiche 25","Affiche 205"],correct:0,cat:"erreurs",explain:"On ne peut pas additionner str + int en Python → TypeError. Il faut int(age)+5 ou age+str(5)."},
-{q:"Que contient `liste` ?",code:`liste = list(range(2, 10, 2))`,answers:["[2, 4, 6, 8]","[2, 10, 2]","[2,3,4,5,6,7,8,9]","[0,2,4,6,8]"],correct:0,cat:"théorie",explain:"range(début=2, fin=10 exclue, pas=2) → 2,4,6,8. Théorie : le stop est toujours exclu."},
-{q:"Que va afficher ce programme ?",code:`def saluer(nom="ami"):\n    print("Bonjour", nom)\n\nsaluer()\nsaluer("Sara")`,answers:["Bonjour ami puis Bonjour Sara","Bonjour puis Bonjour Sara","Erreur : argument manquant","Bonjour ami deux fois"],correct:0,cat:"fonctions",explain:"Paramètre par défaut nom='ami' utilisé quand on n'envoie rien. Puis 'Sara' écrase le défaut."},
-{q:"Que vaut le test ?",code:`d = {"a": 1, "b": 2}\nprint("a" in d)\nprint(1 in d)`,answers:["True puis False","True puis True","False puis True","False puis False"],correct:0,cat:"dicts",explain:"`in` sur un dict teste les CLÉS, pas les valeurs. 'a' est une clé → True, 1 est une valeur → False."},
-{q:"Quelle est la sortie ?",code:`mots = "pomme-banane-kiwi"\nparties = mots.split("-")\nprint(len(parties))\nprint("-".join(["a", "b"]))`,answers:["3 puis a-b","2 puis ab","3 puis a b","Erreur split"],correct:0,cat:"strings",explain:"split('-') coupe en 3 morceaux. join recolle la liste avec '-' → 'a-b'."},
-{q:"Que vaut `x` ?",code:`def mystere():\n    a = 5\n\nx = mystere()\nprint(x)`,answers:["None","5","0","Erreur de nom"],correct:0,cat:"fonctions",explain:"Théorie pure : une fonction sans `return` renvoie toujours None. `a` est locale et perdue."},
-{q:"Que fait ce programme ?",code:`total = 0\nfor n in [10, 20, 30]:\n    if n > 15:\n        total += n\nprint(total)`,answers:["50","60","20","30"],correct:0,cat:"boucles",explain:"Seuls 20 et 30 sont >15 → 20+30=50. 10 est ignoré."},
-{q:"Quel mot-clé est le plus sûr pour ouvrir un fichier ?",code:`# Quelle bonne pratique ?`,answers:["with open(...) as f:","f = open(...) sans close","open + del","os.open direct"],correct:0,cat:"fichiers",explain:"Théorie : `with open(...) as f:` ferme AUTOMATIQUEMENT le fichier même en cas d'erreur. Ne jamais oublier close()."},
-{q:"Que va afficher ce programme ?",code:`a = [1, 2]\nb = a\nb.append(3)\nprint(a)`,answers:["[1, 2, 3]","[1, 2]","[1, 2, 3] puis [1, 2]","Erreur de référence"],correct:0,cat:"théorie",explain:"Piège classique : b = a ne copie PAS, les deux noms pointent vers la MÊME liste. Pour copier : a.copy() ou a[:]."}
-,
-{"q": "Que va afficher ce programme ?", "code": "a = 12\nb = 3\nprint(a + b)", "answers": ["15", "14", "36", "18"], "correct": 0, "cat": "variables", "explain": "Calcul : 12 + 3 = 15."},
-{"q": "Que va afficher ce programme ?", "code": "a = 2\nb = 3\nprint(a ** b)", "answers": ["8", "7", "10", "9"], "correct": 0, "cat": "variables", "explain": "Calcul : 2 ** 3 = 8."},
-{"q": "Que va afficher ce programme ?", "code": "a = 5\nb = 10\nprint(a % b)", "answers": ["5", "15", "4", "16"], "correct": 0, "cat": "variables", "explain": "Calcul : 5 % 10 = 5."},
-{"q": "Que va afficher ce programme ?", "code": "a = 5\nb = 9\nprint(a % b)", "answers": ["5", "6", "4", "15"], "correct": 0, "cat": "variables", "explain": "Calcul : 5 % 9 = 5."},
-{"q": "Que va afficher ce programme ?", "code": "a = 7\nb = 6\nprint(a * b)", "answers": ["42", "43", "14", "41"], "correct": 0, "cat": "variables", "explain": "Calcul : 7 * 6 = 42."},
-{"q": "Que va afficher ce programme ?", "code": "a = 3\nb = 7\nprint(a - b)", "answers": ["-4", "10", "11", "-2"], "correct": 0, "cat": "variables", "explain": "Calcul : 3 - 7 = -4."},
-{"q": "Que va afficher ce programme ?", "code": "a = 10\nb = 3\nprint(a // b)", "answers": ["3", "14", "5", "2"], "correct": 0, "cat": "variables", "explain": "Calcul : 10 // 3 = 3."},
-{"q": "Que va afficher ce programme ?", "code": "a = 2\nb = 2\nprint(a ** b)", "answers": ["4", "6", "5", "7"], "correct": 0, "cat": "variables", "explain": "Calcul : 2 ** 2 = 4."},
-{"q": "Que va afficher ce programme ?", "code": "a = 5\nb = 3\nprint(a // b)", "answers": ["1", "8", "9", "0"], "correct": 0, "cat": "variables", "explain": "Calcul : 5 // 3 = 1."},
-{"q": "Que va afficher ce programme ?", "code": "a = 4\nb = 2\nprint(a ** b)", "answers": ["16", "17", "8", "7"], "correct": 0, "cat": "variables", "explain": "Calcul : 4 ** 2 = 16."},
-{"q": "Que va afficher ce programme ?", "code": "a = 3\nb = 3\nprint(a ** b)", "answers": ["27", "28", "9", "6"], "correct": 0, "cat": "variables", "explain": "Calcul : 3 ** 3 = 27."},
-{"q": "Que va afficher ce programme ?", "code": "a = 6\nb = 3\nprint(a * b)", "answers": ["18", "20", "17", "19"], "correct": 0, "cat": "variables", "explain": "Calcul : 6 * 3 = 18."},
-{"q": "Que va afficher ce programme ?", "code": "a = 8\nb = 12\nprint(a // b)", "answers": ["0", "2", "1", "20"], "correct": 0, "cat": "variables", "explain": "Calcul : 8 // 12 = 0."},
-{"q": "Que va afficher ce programme ?", "code": "a = 11\nb = 8\nprint(a % b)", "answers": ["3", "4", "19", "88"], "correct": 0, "cat": "variables", "explain": "Calcul : 11 % 8 = 3."},
-{"q": "Que va afficher ce programme ?", "code": "a = 3\nb = 2\nprint(a + b)", "answers": ["5", "7", "6", "8"], "correct": 0, "cat": "variables", "explain": "Calcul : 3 + 2 = 5."},
-{"q": "Que va afficher ce programme ?", "code": "a = 12\nb = 8\nprint(a % b)", "answers": ["4", "6", "5", "21"], "correct": 0, "cat": "variables", "explain": "Calcul : 12 % 8 = 4."},
-{"q": "Que va afficher ce programme ?", "code": "a = 10\nb = 6\nprint(a % b)", "answers": ["4", "60", "16", "17"], "correct": 0, "cat": "variables", "explain": "Calcul : 10 % 6 = 4."},
-{"q": "Que va afficher ce programme ?", "code": "a = 3\nb = 6\nprint(a // b)", "answers": ["0", "2", "18", "1"], "correct": 0, "cat": "variables", "explain": "Calcul : 3 // 6 = 0."},
-{"q": "Que va afficher ce programme ?", "code": "a = 10\nb = 4\nprint(a % b)", "answers": ["2", "14", "4", "15"], "correct": 0, "cat": "variables", "explain": "Calcul : 10 % 4 = 2."},
-{"q": "Que va afficher ce programme ?", "code": "a = 4\nb = 10\nprint(a % b)", "answers": ["4", "40", "15", "6"], "correct": 0, "cat": "variables", "explain": "Calcul : 4 % 10 = 4."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(0, 5, 2)))", "answers": ["[0, 2, 4]", "[1, 3]", "[4, 2, 0]", "[0, 2]"], "correct": 0, "cat": "boucles", "explain": "range(0, 5, 2) commence à 0, avance de 2, s'arrête AVANT 5 → [0, 2, 4]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(1, 4, 1)))", "answers": ["[1, 2, 3]", "[1, 2, 3, 4]", "[2, 3]", "[3, 2, 1]"], "correct": 0, "cat": "boucles", "explain": "range(1, 4, 1) commence à 1, avance de 1, s'arrête AVANT 4 → [1, 2, 3]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(4, 7, 1)))", "answers": ["[4, 5, 6]", "[4, 5, 6, 7]", "[5, 6]", "[6, 5, 4]"], "correct": 0, "cat": "boucles", "explain": "range(4, 7, 1) commence à 4, avance de 1, s'arrête AVANT 7 → [4, 5, 6]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(5, 11, 1)))", "answers": ["[5, 6, 7, 8, 9, 10]", "[5, 6, 7, 8, 9, 10, 11]", "[6, 7, 8, 9, 10]", "[10, 9, 8, 7, 6, 5]"], "correct": 0, "cat": "boucles", "explain": "range(5, 11, 1) commence à 5, avance de 1, s'arrête AVANT 11 → [5, 6, 7, 8, 9, 10]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(4, 8, 1)))", "answers": ["[4, 5, 6, 7]", "[4, 5, 6, 7, 8]", "[5, 6, 7]", "[7, 6, 5, 4]"], "correct": 0, "cat": "boucles", "explain": "range(4, 8, 1) commence à 4, avance de 1, s'arrête AVANT 8 → [4, 5, 6, 7]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(5, 11, 3)))", "answers": ["[5, 8]", "[5, 8, 11]", "[6, 9]", "[8, 5]"], "correct": 0, "cat": "boucles", "explain": "range(5, 11, 3) commence à 5, avance de 3, s'arrête AVANT 11 → [5, 8]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(1, 6, 3)))", "answers": ["[1, 4]", "[2, 5]", "[4, 1]", "[1]"], "correct": 0, "cat": "boucles", "explain": "range(1, 6, 3) commence à 1, avance de 3, s'arrête AVANT 6 → [1, 4]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(4, 10, 1)))", "answers": ["[4, 5, 6, 7, 8, 9]", "[4, 5, 6, 7, 8, 9, 10]", "[5, 6, 7, 8, 9]", "[9, 8, 7, 6, 5, 4]"], "correct": 0, "cat": "boucles", "explain": "range(4, 10, 1) commence à 4, avance de 1, s'arrête AVANT 10 → [4, 5, 6, 7, 8, 9]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(4, 8, 2)))", "answers": ["[4, 6]", "[4, 6, 8]", "[5, 7]", "[6, 4]"], "correct": 0, "cat": "boucles", "explain": "range(4, 8, 2) commence à 4, avance de 2, s'arrête AVANT 8 → [4, 6]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(3, 8, 2)))", "answers": ["[3, 5, 7]", "[4, 6]", "[7, 5, 3]", "[3, 5]"], "correct": 0, "cat": "boucles", "explain": "range(3, 8, 2) commence à 3, avance de 2, s'arrête AVANT 8 → [3, 5, 7]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(4, 10, 1)))", "answers": ["[4, 5, 6, 7, 8, 9]", "[4, 5, 6, 7, 8, 9, 10]", "[5, 6, 7, 8, 9]", "[9, 8, 7, 6, 5, 4]"], "correct": 0, "cat": "boucles", "explain": "range(4, 10, 1) commence à 4, avance de 1, s'arrête AVANT 10 → [4, 5, 6, 7, 8, 9]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(1, 5, 1)))", "answers": ["[1, 2, 3, 4]", "[1, 2, 3, 4, 5]", "[2, 3, 4]", "[4, 3, 2, 1]"], "correct": 0, "cat": "boucles", "explain": "range(1, 5, 1) commence à 1, avance de 1, s'arrête AVANT 5 → [1, 2, 3, 4]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(2, 5, 3)))", "answers": ["[2]", "[2, 5]", "[3]", "[]"], "correct": 0, "cat": "boucles", "explain": "range(2, 5, 3) commence à 2, avance de 3, s'arrête AVANT 5 → [2]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(4, 8, 3)))", "answers": ["[4, 7]", "[5]", "[7, 4]", "[4]"], "correct": 0, "cat": "boucles", "explain": "range(4, 8, 3) commence à 4, avance de 3, s'arrête AVANT 8 → [4, 7]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(1, 4, 1)))", "answers": ["[1, 2, 3]", "[1, 2, 3, 4]", "[2, 3]", "[3, 2, 1]"], "correct": 0, "cat": "boucles", "explain": "range(1, 4, 1) commence à 1, avance de 1, s'arrête AVANT 4 → [1, 2, 3]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(5, 8, 1)))", "answers": ["[5, 6, 7]", "[5, 6, 7, 8]", "[6, 7]", "[7, 6, 5]"], "correct": 0, "cat": "boucles", "explain": "range(5, 8, 1) commence à 5, avance de 1, s'arrête AVANT 8 → [5, 6, 7]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(0, 3, 2)))", "answers": ["[0, 2]", "[1]", "[2, 0]", "[0]"], "correct": 0, "cat": "boucles", "explain": "range(0, 3, 2) commence à 0, avance de 2, s'arrête AVANT 3 → [0, 2]."},
-{"q": "Que va afficher ce programme ?", "code": "print(list(range(0, 7, 1)))", "answers": ["[0, 1, 2, 3, 4, 5, 6]", "[0, 1, 2, 3, 4, 5, 6, 7]", "[1, 2, 3, 4, 5, 6]", "[6, 5, 4, 3, 2, 1, 0]"], "correct": 0, "cat": "boucles", "explain": "range(0, 7, 1) commence à 0, avance de 1, s'arrête AVANT 7 → [0, 1, 2, 3, 4, 5, 6]."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [16, 7, 18, 5]:\n    total += n\nprint(total)", "answers": ["46", "47", "45", "51"], "correct": 0, "cat": "boucles", "explain": "On additionne [16, 7, 18, 5] → 16+7+18+5 = 46."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [19, 19, 16, 8, 16]:\n    total += n\nprint(total)", "answers": ["78", "79", "77", "83"], "correct": 0, "cat": "boucles", "explain": "On additionne [19, 19, 16, 8, 16] → 19+19+16+8+16 = 78."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [7, 4, 4, 14]:\n    total += n\nprint(total)", "answers": ["29", "30", "28", "34"], "correct": 0, "cat": "boucles", "explain": "On additionne [7, 4, 4, 14] → 7+4+4+14 = 29."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [14, 14, 15, 2]:\n    total += n\nprint(total)", "answers": ["45", "46", "44", "50"], "correct": 0, "cat": "boucles", "explain": "On additionne [14, 14, 15, 2] → 14+14+15+2 = 45."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [4, 2, 13, 11, 4]:\n    total += n\nprint(total)", "answers": ["34", "35", "33", "39"], "correct": 0, "cat": "boucles", "explain": "On additionne [4, 2, 13, 11, 4] → 4+2+13+11+4 = 34."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [7, 7, 18]:\n    total += n\nprint(total)", "answers": ["32", "33", "31", "37"], "correct": 0, "cat": "boucles", "explain": "On additionne [7, 7, 18] → 7+7+18 = 32."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [5, 14, 6, 9]:\n    total += n\nprint(total)", "answers": ["34", "35", "33", "39"], "correct": 0, "cat": "boucles", "explain": "On additionne [5, 14, 6, 9] → 5+14+6+9 = 34."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [8, 3, 15, 18]:\n    total += n\nprint(total)", "answers": ["44", "45", "43", "49"], "correct": 0, "cat": "boucles", "explain": "On additionne [8, 3, 15, 18] → 8+3+15+18 = 44."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [2, 18, 1]:\n    total += n\nprint(total)", "answers": ["21", "22", "20", "26"], "correct": 0, "cat": "boucles", "explain": "On additionne [2, 18, 1] → 2+18+1 = 21."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [8, 6, 14]:\n    total += n\nprint(total)", "answers": ["28", "29", "27", "33"], "correct": 0, "cat": "boucles", "explain": "On additionne [8, 6, 14] → 8+6+14 = 28."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [16, 7, 13, 2]:\n    total += n\nprint(total)", "answers": ["38", "39", "37", "43"], "correct": 0, "cat": "boucles", "explain": "On additionne [16, 7, 13, 2] → 16+7+13+2 = 38."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [13, 1, 13]:\n    total += n\nprint(total)", "answers": ["27", "28", "26", "32"], "correct": 0, "cat": "boucles", "explain": "On additionne [13, 1, 13] → 13+1+13 = 27."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [15, 10, 14, 18]:\n    total += n\nprint(total)", "answers": ["57", "58", "56", "62"], "correct": 0, "cat": "boucles", "explain": "On additionne [15, 10, 14, 18] → 15+10+14+18 = 57."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [16, 5, 7, 10, 7]:\n    total += n\nprint(total)", "answers": ["45", "46", "44", "50"], "correct": 0, "cat": "boucles", "explain": "On additionne [16, 5, 7, 10, 7] → 16+5+7+10+7 = 45."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [19, 18, 2]:\n    total += n\nprint(total)", "answers": ["39", "40", "38", "44"], "correct": 0, "cat": "boucles", "explain": "On additionne [19, 18, 2] → 19+18+2 = 39."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [11, 2, 2, 19, 16]:\n    total += n\nprint(total)", "answers": ["50", "51", "49", "55"], "correct": 0, "cat": "boucles", "explain": "On additionne [11, 2, 2, 19, 16] → 11+2+2+19+16 = 50."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [17, 6, 2, 17, 3]:\n    total += n\nprint(total)", "answers": ["45", "46", "44", "50"], "correct": 0, "cat": "boucles", "explain": "On additionne [17, 6, 2, 17, 3] → 17+6+2+17+3 = 45."},
-{"q": "Que va afficher ce programme ?", "code": "total = 0\nfor n in [3, 20, 3]:\n    total += n\nprint(total)", "answers": ["26", "27", "25", "31"], "correct": 0, "cat": "boucles", "explain": "On additionne [3, 20, 3] → 3+20+3 = 26."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [22, 28, 8, 13]:\n    if n > 10:\n        total += n\nprint(total)", "answers": ["63", "71", "85", "64"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 10 sont additionnés : [22, 28, 13] → somme = 63."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [29, 19, 8, 19]:\n    if n > 20:\n        total += n\nprint(total)", "answers": ["29", "75", "58", "30"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 20 sont additionnés : [29] → somme = 29."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [2, 20, 3, 14]:\n    if n > 20:\n        total += n\nprint(total)", "answers": ["0", "39", "2", "1"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 20 sont additionnés : [] → somme = 0."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [19, 19, 17, 11]:\n    if n > 15:\n        total += n\nprint(total)", "answers": ["55", "66", "74", "56"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 15 sont additionnés : [19, 19, 17] → somme = 55."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [7, 22, 23, 11]:\n    if n > 10:\n        total += n\nprint(total)", "answers": ["56", "63", "57", "55"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 10 sont additionnés : [22, 23, 11] → somme = 56."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [9, 13, 5, 22]:\n    if n > 20:\n        total += n\nprint(total)", "answers": ["22", "49", "31", "23"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 20 sont additionnés : [22] → somme = 22."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [10, 15, 11, 30]:\n    if n > 10:\n        total += n\nprint(total)", "answers": ["56", "66", "57", "55"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 10 sont additionnés : [15, 11, 30] → somme = 56."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [1, 15, 20, 19]:\n    if n > 10:\n        total += n\nprint(total)", "answers": ["54", "55", "53", "3"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 10 sont additionnés : [15, 20, 19] → somme = 54."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [3, 18, 7, 17]:\n    if n > 15:\n        total += n\nprint(total)", "answers": ["35", "45", "38", "36"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 15 sont additionnés : [18, 17] → somme = 35."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [5, 30, 12, 29]:\n    if n > 10:\n        total += n\nprint(total)", "answers": ["71", "76", "72", "70"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 10 sont additionnés : [30, 12, 29] → somme = 71."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [29, 8, 12, 10]:\n    if n > 10:\n        total += n\nprint(total)", "answers": ["41", "59", "70", "42"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 10 sont additionnés : [29, 12] → somme = 41."},
-{"q": "Que fait ce programme ?", "code": "total = 0\nfor n in [15, 27, 18, 23]:\n    if n > 15:\n        total += n\nprint(total)", "answers": ["68", "83", "69", "67"], "correct": 0, "cat": "boucles", "explain": "Seuls les nombres > 15 sont additionnés : [27, 18, 23] → somme = 68."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"Léa\"\nprint(mot[-1])\nprint(mot[0])", "answers": ["a puis L", "L puis a", "L puis é", "a puis a"], "correct": 0, "cat": "strings", "explain": "mot[0] = premier \"L\", mot[-1] = dernier \"a\"."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"Python\"\nprint(mot[-1])\nprint(mot[0])", "answers": ["n puis P", "P puis n", "P puis y", "n puis n"], "correct": 0, "cat": "strings", "explain": "mot[0] = premier \"P\", mot[-1] = dernier \"n\"."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"clavier\"\nprint(len(mot))", "answers": ["7", "8", "6", "clavier"], "correct": 0, "cat": "strings", "explain": "len(\"clavier\") = 7 caractères."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"PROGRAMMATION\"\nprint(mot.lower())", "answers": ["programmation", "PROGRAMMATION", "Programmation", "programmations"], "correct": 0, "cat": "strings", "explain": ".lower() met tout en minuscules → programmation."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"Bonjour\"\nprint(len(mot))", "answers": ["7", "8", "6", "Bonjour"], "correct": 0, "cat": "strings", "explain": "len(\"Bonjour\") = 7 caractères."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"cerise\"\nprint(mot.upper())", "answers": ["CERISE", "cerise", "Cerise", "CERISEs"], "correct": 0, "cat": "strings", "explain": ".upper() met tout en MAJUSCULES → CERISE."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"CLAVIER\"\nprint(mot.lower())", "answers": ["clavier", "CLAVIER", "Clavier", "claviers"], "correct": 0, "cat": "strings", "explain": ".lower() met tout en minuscules → clavier."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"Léa\"\nprint(mot.upper())", "answers": ["LÉA", "léa", "Léa", "LÉAs"], "correct": 0, "cat": "strings", "explain": ".upper() met tout en MAJUSCULES → LÉA."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"souris\"\nprint(mot.upper())", "answers": ["SOURIS", "souris", "Souris", "SOURISs"], "correct": 0, "cat": "strings", "explain": ".upper() met tout en MAJUSCULES → SOURIS."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"INFORMATIQUE\"\nprint(mot.lower())", "answers": ["informatique", "INFORMATIQUE", "Informatique", "informatiques"], "correct": 0, "cat": "strings", "explain": ".lower() met tout en minuscules → informatique."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"cerise\"\nprint(mot[1:3])", "answers": ["er", "eri", "r", "cer"], "correct": 0, "cat": "strings", "explain": "mot[1:3] prend les caractères d’index 1 à 2 → \"er\"."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"Bonjour\"\nprint(mot[1:3])", "answers": ["on", "onj", "n", "Bon"], "correct": 0, "cat": "strings", "explain": "mot[1:3] prend les caractères d’index 1 à 2 → \"on\"."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"PYTHON\"\nprint(mot.lower())", "answers": ["python", "PYTHON", "Python", "pythons"], "correct": 0, "cat": "strings", "explain": ".lower() met tout en minuscules → python."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"PROGRAMMATION\"\nprint(mot.lower())", "answers": ["programmation", "PROGRAMMATION", "Programmation", "programmations"], "correct": 0, "cat": "strings", "explain": ".lower() met tout en minuscules → programmation."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"programmation\"\nprint(mot[2:6])", "answers": ["ogra", "ogram", "gra", "progra"], "correct": 0, "cat": "strings", "explain": "mot[2:6] prend les caractères d’index 2 à 5 → \"ogra\"."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"écran\"\nprint(mot[-1])\nprint(mot[0])", "answers": ["n puis é", "é puis n", "é puis c", "n puis n"], "correct": 0, "cat": "strings", "explain": "mot[0] = premier \"é\", mot[-1] = dernier \"n\"."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"Python\"\nprint(len(mot))", "answers": ["6", "7", "5", "Python"], "correct": 0, "cat": "strings", "explain": "len(\"Python\") = 6 caractères."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"Bonjour\"\nprint(mot.upper())", "answers": ["BONJOUR", "bonjour", "Bonjour", "BONJOURs"], "correct": 0, "cat": "strings", "explain": ".upper() met tout en MAJUSCULES → BONJOUR."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"cerise\"\nprint(len(mot))", "answers": ["6", "7", "5", "cerise"], "correct": 0, "cat": "strings", "explain": "len(\"cerise\") = 6 caractères."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"souris\"\nprint(mot[-1])\nprint(mot[0])", "answers": ["s puis s", "s puis o", "s puis ss", "s puis s ?2"], "correct": 0, "cat": "strings", "explain": "mot[0] = premier \"s\", mot[-1] = dernier \"s\"."},
-{"q": "Quelle est la sortie ?", "code": "nom = \"Hugo\"\nage = 28\nprint(f\"{nom} a {age} ans\")", "answers": ["Hugo a 28 ans", "Hugo a age ans", "{nom} a {age} ans", "hugo a 28 ans"], "correct": 0, "cat": "strings", "explain": "f\"...\" (f-string) remplace {nom} et {age} par leurs valeurs."},
-{"q": "Quelle est la sortie ?", "code": "print(\"-\".join([\"a\", \"b\", \"c\"]))", "answers": ["a-b-c", "abc", "a b c", "a,b,c"], "correct": 0, "cat": "strings", "explain": "join recolle la liste avec \"-\" → a-b-c."},
-{"q": "Quelle est la sortie ?", "code": "mots = \"pomme-banane-kiwi\"\nprint(mots.split(\"-\"))", "answers": ["['pomme', 'banane', 'kiwi']", "['pomme-banane-kiwi']", "['pomme', 'banane']", "['pomme', 'banane', 'kiwi']s"], "correct": 0, "cat": "strings", "explain": "split(\"-\") découpe aux tirets → ['pomme', 'banane', 'kiwi']."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"banane\"\nprint(\"an\" in mot)", "answers": ["True", "False", "Erreur", "None"], "correct": 0, "cat": "strings", "explain": "\"an\" est bien une sous-chaîne de \"banane\" → True."},
-{"q": "Quelle est la sortie ?", "code": "mots = \"pomme-banane-kiwi\"\nprint(mots.split(\"-\"))", "answers": ["['pomme', 'banane', 'kiwi']", "['pomme-banane-kiwi']", "['pomme', 'banane']", "['pomme', 'banane', 'kiwi']s"], "correct": 0, "cat": "strings", "explain": "split(\"-\") découpe aux tirets → ['pomme', 'banane', 'kiwi']."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"Python\"\nprint(\"yt\" in mot)", "answers": ["True", "False", "Erreur", "None"], "correct": 0, "cat": "strings", "explain": "\"yt\" est bien une sous-chaîne de \"Python\" → True."},
-{"q": "Quelle est la sortie ?", "code": "print(\"-\".join([\"a\", \"b\", \"c\"]))", "answers": ["a-b-c", "abc", "a b c", "a,b,c"], "correct": 0, "cat": "strings", "explain": "join recolle la liste avec \"-\" → a-b-c."},
-{"q": "Quelle est la sortie ?", "code": "mots = \"pomme-banane-kiwi\"\nprint(mots.split(\"-\"))", "answers": ["['pomme', 'banane', 'kiwi']", "['pomme-banane-kiwi']", "['pomme', 'banane']", "['pomme', 'banane', 'kiwi']s"], "correct": 0, "cat": "strings", "explain": "split(\"-\") découpe aux tirets → ['pomme', 'banane', 'kiwi']."},
-{"q": "Quelle est la sortie ?", "code": "mot = \"ordinateur\"\nprint(\"rd\" in mot)", "answers": ["True", "False", "Erreur", "None"], "correct": 0, "cat": "strings", "explain": "\"rd\" est bien une sous-chaîne de \"ordinateur\" → True."},
-{"q": "Quelle est la sortie ?", "code": "print(\"bonjour\".replace(\"o\", \"0\"))", "answers": ["b0nj0ur", "bonjour", "Bonjour", "b0njour"], "correct": 0, "cat": "strings", "explain": "replace remplace TOUS les \"o\" par \"0\" → b0nj0ur."},
-{"q": "Quelle est la sortie ?", "code": "nom = \"Hugo\"\nage = 22\nprint(f\"{nom} a {age} ans\")", "answers": ["Hugo a 22 ans", "Hugo a age ans", "{nom} a {age} ans", "hugo a 22 ans"], "correct": 0, "cat": "strings", "explain": "f\"...\" (f-string) remplace {nom} et {age} par leurs valeurs."},
-{"q": "Quelle est la sortie ?", "code": "print(\"-\".join([\"a\", \"b\", \"c\"]))", "answers": ["a-b-c", "abc", "a b c", "a,b,c"], "correct": 0, "cat": "strings", "explain": "join recolle la liste avec \"-\" → a-b-c."},
-{"q": "Quelle est la sortie ?", "code": "print(\"-\".join([\"a\", \"b\", \"c\"]))", "answers": ["a-b-c", "abc", "a b c", "a,b,c"], "correct": 0, "cat": "strings", "explain": "join recolle la liste avec \"-\" → a-b-c."},
-{"q": "Quelle est la sortie ?", "code": "print(\"bonjour\".replace(\"o\", \"0\"))", "answers": ["b0nj0ur", "bonjour", "Bonjour", "b0njour"], "correct": 0, "cat": "strings", "explain": "replace remplace TOUS les \"o\" par \"0\" → b0nj0ur."},
-{"q": "Que va afficher ce programme ?", "code": "l = [24, 30, 11]\nprint(l[1])", "answers": ["30", "24", "11", "3"], "correct": 0, "cat": "listes", "explain": "l[1] = 30 (index 0 = premier élément)."},
-{"q": "Que va afficher ce programme ?", "code": "l = [6, 26, 23, 4]\nl.pop()\nprint(l)", "answers": ["[6, 26, 23]", "[6, 26, 23, 4]", "[26, 23, 4]", "[6, 26]"], "correct": 0, "cat": "listes", "explain": "pop() sans argument retire le DERNIER élément."},
-{"q": "Que va afficher ce programme ?", "code": "l = [28, 16, 8]\nl.sort()\nprint(l)", "answers": ["[8, 16, 28]", "[28, 16, 8]", "Erreur", "[8, 16, 28]s"], "correct": 0, "cat": "listes", "explain": "sort() trie en place par ordre croissant → [8, 16, 28]."},
-{"q": "Que va afficher ce programme ?", "code": "l = [12, 10, 27, 26]\nl.pop()\nprint(l)", "answers": ["[12, 10, 27]", "[12, 10, 27, 26]", "[10, 27, 26]", "[12, 10]"], "correct": 0, "cat": "listes", "explain": "pop() sans argument retire le DERNIER élément."},
-{"q": "Que va afficher ce programme ?", "code": "l = [1, 22, 7]\nl.pop()\nprint(l)", "answers": ["[1, 22]", "[1, 22, 7]", "[22, 7]", "[1]"], "correct": 0, "cat": "listes", "explain": "pop() sans argument retire le DERNIER élément."},
-{"q": "Que va afficher ce programme ?", "code": "l = [9, 28, 3, 25]\nl.sort()\nprint(l)", "answers": ["[3, 9, 25, 28]", "[28, 25, 9, 3]", "[9, 28, 3, 25]", "Erreur"], "correct": 0, "cat": "listes", "explain": "sort() trie en place par ordre croissant → [3, 9, 25, 28]."},
-{"q": "Que va afficher ce programme ?", "code": "l = [21, 17, 13, 22]\nprint(l[1:3])", "answers": ["[17, 13]", "[21, 17]", "[17, 13, 22]", "[21, 17, 13]"], "correct": 0, "cat": "listes", "explain": "l[1:3] = éléments d'index 1 et 2 → [17, 13]."},
-{"q": "Que va afficher ce programme ?", "code": "l = [1, 4, 29, 9]\nprint(sum(l))", "answers": ["43", "44", "4", "29"], "correct": 0, "cat": "listes", "explain": "sum additionne tout : 43."},
-{"q": "Que va afficher ce programme ?", "code": "l = [9, 2, 4, 20, 14]\nl.append(72)\nprint(l)", "answers": ["[9, 2, 4, 20, 14, 72]", "[9, 2, 4, 20, 14]", "[72, 9, 2, 4, 20, 14]", "[9, 2, 4, 20, 72]"], "correct": 0, "cat": "listes", "explain": "append(72) ajoute à la FIN."},
-{"q": "Que va afficher ce programme ?", "code": "l = [20, 17, 4, 13]\nprint(20 in l)", "answers": ["True", "False", "Erreur", "None"], "correct": 0, "cat": "listes", "explain": "20 est dans [20, 17, 4, 13] → True."},
-{"q": "Que va afficher ce programme ?", "code": "l = [23, 14, 1]\nprint(l[1:3])", "answers": ["[14, 1]", "[23, 14]", "[23, 14, 1]", "[14, 1]s"], "correct": 0, "cat": "listes", "explain": "l[1:3] = éléments d'index 1 et 2 → [14, 1]."},
-{"q": "Que va afficher ce programme ?", "code": "l = [22, 24, 24, 24, 22]\nprint(sum(l))", "answers": ["116", "117", "5", "24"], "correct": 0, "cat": "listes", "explain": "sum additionne tout : 116."},
-{"q": "Que va afficher ce programme ?", "code": "l = [14, 3, 22, 30]\nl.pop()\nprint(l)", "answers": ["[14, 3, 22]", "[14, 3, 22, 30]", "[3, 22, 30]", "[14, 3]"], "correct": 0, "cat": "listes", "explain": "pop() sans argument retire le DERNIER élément."},
-{"q": "Que va afficher ce programme ?", "code": "l = [11, 22, 28, 4, 24]\nprint(999 in l)", "answers": ["False", "True", "Erreur", "None"], "correct": 0, "cat": "listes", "explain": "999 n’est pas dans [11, 22, 28, 4, 24] → False."},
-{"q": "Que va afficher ce programme ?", "code": "l = [22, 14, 11, 13]\nprint(sum(l))", "answers": ["60", "61", "4", "22"], "correct": 0, "cat": "listes", "explain": "sum additionne tout : 60."},
-{"q": "Que va afficher ce programme ?", "code": "l = [5, 7, 14, 22, 13]\nprint(l[1:3])", "answers": ["[7, 14]", "[5, 7]", "[7, 14, 22]", "[5, 7, 14]"], "correct": 0, "cat": "listes", "explain": "l[1:3] = éléments d'index 1 et 2 → [7, 14]."},
-{"q": "Que va afficher ce programme ?", "code": "l = [19, 10, 13, 18, 27]\nl.append(50)\nprint(l)", "answers": ["[19, 10, 13, 18, 27, 50]", "[19, 10, 13, 18, 27]", "[50, 19, 10, 13, 18, 27]", "[19, 10, 13, 18, 50]"], "correct": 0, "cat": "listes", "explain": "append(50) ajoute à la FIN."},
-{"q": "Que va afficher ce programme ?", "code": "l = [7, 14, 26, 19]\nprint(l[1:3])", "answers": ["[14, 26]", "[7, 14]", "[14, 26, 19]", "[7, 14, 26]"], "correct": 0, "cat": "listes", "explain": "l[1:3] = éléments d'index 1 et 2 → [14, 26]."},
-{"q": "Que va afficher ce programme ?", "code": "l = [1, 2]\nl.extend([3, 4])\nprint(l)", "answers": ["[1, 2, 3, 4]", "[1, 2, [3, 4]]", "[1, 2, 3]", "[3, 4]"], "correct": 0, "cat": "listes", "explain": "extend ajoute CHAQUE élément, append ajouterait la liste entière."},
-{"q": "Que va afficher ce programme ?", "code": "l = [16, 26, 29, 26, 24]\nl.pop()\nprint(l)", "answers": ["[16, 26, 29, 26]", "[16, 26, 29, 26, 24]", "[26, 29, 26, 24]", "[16, 26, 29]"], "correct": 0, "cat": "listes", "explain": "pop() sans argument retire le DERNIER élément."},
-{"q": "Que va afficher ce programme ?", "code": "l = [3, 10, 17, 22, 21]\nl.append(89)\nprint(l)", "answers": ["[3, 10, 17, 22, 21, 89]", "[3, 10, 17, 22, 21]", "[89, 3, 10, 17, 22, 21]", "[3, 10, 17, 22, 89]"], "correct": 0, "cat": "listes", "explain": "append(89) ajoute à la FIN."},
-{"q": "Que va afficher ce programme ?", "code": "l = [27, 25, 8]\nprint(999 in l)", "answers": ["False", "True", "Erreur", "None"], "correct": 0, "cat": "listes", "explain": "999 n’est pas dans [27, 25, 8] → False."},
-{"q": "Que va afficher ce programme ?", "code": "l = [5, 1, 2]\nl.pop()\nprint(l)", "answers": ["[5, 1]", "[5, 1, 2]", "[1, 2]", "[5]"], "correct": 0, "cat": "listes", "explain": "pop() sans argument retire le DERNIER élément."},
-{"q": "Que va afficher ce programme ?", "code": "l = [20, 28, 25, 3]\nl.pop()\nprint(l)", "answers": ["[20, 28, 25]", "[20, 28, 25, 3]", "[28, 25, 3]", "[20, 28]"], "correct": 0, "cat": "listes", "explain": "pop() sans argument retire le DERNIER élément."},
-{"q": "Que va afficher ce programme ?", "code": "l = [29, 21, 19, 7]\nprint(max(l))\nprint(min(l))", "answers": ["29 puis 7", "7 puis 29", "29 puis 29", "76"], "correct": 0, "cat": "listes", "explain": "max=29, min=7."},
-{"q": "Que va afficher ce programme ?", "code": "l = [13, 8, 5, 21]\nl.sort()\nprint(l)", "answers": ["[5, 8, 13, 21]", "[21, 13, 8, 5]", "[13, 8, 5, 21]", "Erreur"], "correct": 0, "cat": "listes", "explain": "sort() trie en place par ordre croissant → [5, 8, 13, 21]."},
-{"q": "Que va afficher ce programme ?", "code": "ok = True\nif not ok:\n    print(\"non\")\nelse:\n    print(\"oui\")", "answers": ["oui", "non", "True", "False"], "correct": 0, "cat": "conditions", "explain": "not True = False → branche else → oui."},
-{"q": "Que va afficher ce programme ?", "code": "n = 5\nif n % 2 == 0:\n    print(\"pair\")\nelse:\n    print(\"impair\")", "answers": ["impair", "pair", "True", "False"], "correct": 0, "cat": "conditions", "explain": "5 % 2 = 1 → impair."},
-{"q": "Que va afficher ce programme ?", "code": "x = 5\nif x > 0 and x < 10:\n    print(\"ok\")\nelse:\n    print(\"ko\")", "answers": ["ok", "ko", "True", "Erreur"], "correct": 0, "cat": "conditions", "explain": "5 > 0 ET 5 < 10 → les deux vraies → ok."},
-{"q": "Que va afficher ce programme ?", "code": "age = 17\nif age >= 18:\n    print(\"majeur\")\nelse:\n    print(\"mineur\")", "answers": ["mineur", "majeur", "True", "adulte"], "correct": 0, "cat": "conditions", "explain": "17 >= 18 ? → mineur."},
-{"q": "Que va afficher ce programme ?", "code": "ok = True\nif not ok:\n    print(\"non\")\nelse:\n    print(\"oui\")", "answers": ["oui", "non", "True", "False"], "correct": 0, "cat": "conditions", "explain": "not True = False → branche else → oui."},
-{"q": "Que va afficher ce programme ?", "code": "x = 20\nif x < 0 or x > 10:\n    print(\"grand\")\nelse:\n    print(\"petit\")", "answers": ["grand", "petit", "True", "False"], "correct": 0, "cat": "conditions", "explain": "20 > 10 (2e condition vraie) → or suffit → grand."},
-{"q": "Que va afficher ce programme ?", "code": "x = 5\nif x > 0 and x < 10:\n    print(\"ok\")\nelse:\n    print(\"ko\")", "answers": ["ok", "ko", "True", "Erreur"], "correct": 0, "cat": "conditions", "explain": "5 > 0 ET 5 < 10 → les deux vraies → ok."},
-{"q": "Que va afficher ce programme ?", "code": "n = 19\nif n % 2 == 0:\n    print(\"pair\")\nelse:\n    print(\"impair\")", "answers": ["impair", "pair", "True", "False"], "correct": 0, "cat": "conditions", "explain": "19 % 2 = 1 → impair."},
-{"q": "Que va afficher ce programme ?", "code": "age = 15\nif age >= 18:\n    print(\"majeur\")\nelse:\n    print(\"mineur\")", "answers": ["mineur", "majeur", "True", "adulte"], "correct": 0, "cat": "conditions", "explain": "15 >= 18 ? → mineur."},
-{"q": "Que va afficher ce programme ?", "code": "x = 5\nif x > 0 and x < 10:\n    print(\"ok\")\nelse:\n    print(\"ko\")", "answers": ["ok", "ko", "True", "Erreur"], "correct": 0, "cat": "conditions", "explain": "5 > 0 ET 5 < 10 → les deux vraies → ok."},
-{"q": "Que va afficher ce programme ?", "code": "age = 21\nif age >= 18:\n    print(\"majeur\")\nelse:\n    print(\"mineur\")", "answers": ["majeur", "mineur", "True", "adulte"], "correct": 0, "cat": "conditions", "explain": "21 >= 18 ? → majeur."},
-{"q": "Que va afficher ce programme ?", "code": "ok = True\nif not ok:\n    print(\"non\")\nelse:\n    print(\"oui\")", "answers": ["oui", "non", "True", "False"], "correct": 0, "cat": "conditions", "explain": "not True = False → branche else → oui."},
-{"q": "Que va afficher ce programme ?", "code": "x = 20\nif x < 0 or x > 10:\n    print(\"grand\")\nelse:\n    print(\"petit\")", "answers": ["grand", "petit", "True", "False"], "correct": 0, "cat": "conditions", "explain": "20 > 10 (2e condition vraie) → or suffit → grand."},
-{"q": "Que va afficher ce programme ?", "code": "x = 20\nif x < 0 or x > 10:\n    print(\"grand\")\nelse:\n    print(\"petit\")", "answers": ["grand", "petit", "True", "False"], "correct": 0, "cat": "conditions", "explain": "20 > 10 (2e condition vraie) → or suffit → grand."},
-{"q": "Que va afficher ce programme ?", "code": "x = 20\nif x < 0 or x > 10:\n    print(\"grand\")\nelse:\n    print(\"petit\")", "answers": ["grand", "petit", "True", "False"], "correct": 0, "cat": "conditions", "explain": "20 > 10 (2e condition vraie) → or suffit → grand."},
-{"q": "Que va afficher ce programme ?", "code": "a = 15\nb = 20\nif a > b:\n    print(\"a\")\nelse:\n    print(\"b\")", "answers": ["b", "a", "20", "True"], "correct": 0, "cat": "conditions", "explain": "On compare 15 et 20 → b est le plus grand."},
-{"q": "Que va afficher ce programme ?", "code": "ok = True\nif not ok:\n    print(\"non\")\nelse:\n    print(\"oui\")", "answers": ["oui", "non", "True", "False"], "correct": 0, "cat": "conditions", "explain": "not True = False → branche else → oui."},
-{"q": "Que va afficher ce programme ?", "code": "x = 20\nif x < 0 or x > 10:\n    print(\"grand\")\nelse:\n    print(\"petit\")", "answers": ["grand", "petit", "True", "False"], "correct": 0, "cat": "conditions", "explain": "20 > 10 (2e condition vraie) → or suffit → grand."},
-{"q": "Que va afficher ce programme ?", "code": "def mystere():\n    x = 5\n\nprint(mystere())", "answers": ["None", "5", "0", "Erreur"], "correct": 0, "cat": "fonctions", "explain": "Pas de return → la fonction renvoie None."},
-{"q": "Que va afficher ce programme ?", "code": "def f(x):\n    return x + 1\n\nprint(f(9) + f(9))", "answers": ["20", "18", "10", "11"], "correct": 0, "cat": "fonctions", "explain": "f(9) = 10, donc 10+10 = 20."},
-{"q": "Que va afficher ce programme ?", "code": "def double(n):\n    return n * 2\n\nprint(double(10))", "answers": ["20", "10", "30", "12"], "correct": 0, "cat": "fonctions", "explain": "double(10) = 10*2 = 20."},
-{"q": "Que va afficher ce programme ?", "code": "def mystere():\n    x = 5\n\nprint(mystere())", "answers": ["None", "5", "0", "Erreur"], "correct": 0, "cat": "fonctions", "explain": "Pas de return → la fonction renvoie None."},
-{"q": "Que va afficher ce programme ?", "code": "def saluer(nom=\"ami\"):\n    return \"Bonjour \" + nom\n\nprint(saluer())", "answers": ["Bonjour ami", "Bonjour", "Bonjour None", "Erreur"], "correct": 0, "cat": "fonctions", "explain": "Sans argument, le paramètre par défaut 'ami' est utilisé."},
-{"q": "Que va afficher ce programme ?", "code": "def f(x):\n    return x + 1\n\nprint(f(5) + f(5))", "answers": ["12", "10", "6", "7"], "correct": 0, "cat": "fonctions", "explain": "f(5) = 6, donc 6+6 = 12."},
-{"q": "Que va afficher ce programme ?", "code": "def f(x):\n    return x + 1\n\nprint(f(6) + f(6))", "answers": ["14", "12", "7", "8"], "correct": 0, "cat": "fonctions", "explain": "f(6) = 7, donc 7+7 = 14."},
-{"q": "Que va afficher ce programme ?", "code": "def f(x):\n    return x + 1\n\nprint(f(9) + f(9))", "answers": ["20", "18", "10", "11"], "correct": 0, "cat": "fonctions", "explain": "f(9) = 10, donc 10+10 = 20."},
-{"q": "Que va afficher ce programme ?", "code": "def carre(n):\n    return n ** 2\n\nprint(carre(5))", "answers": ["25", "10", "7", "125"], "correct": 0, "cat": "fonctions", "explain": "5**2 = 25 = 25."},
-{"q": "Que va afficher ce programme ?", "code": "def saluer(nom=\"ami\"):\n    return \"Bonjour \" + nom\n\nprint(saluer())", "answers": ["Bonjour ami", "Bonjour", "Bonjour None", "Erreur"], "correct": 0, "cat": "fonctions", "explain": "Sans argument, le paramètre par défaut 'ami' est utilisé."},
-{"q": "Que va afficher ce programme ?", "code": "def mystere():\n    x = 5\n\nprint(mystere())", "answers": ["None", "5", "0", "Erreur"], "correct": 0, "cat": "fonctions", "explain": "Pas de return → la fonction renvoie None."},
-{"q": "Que va afficher ce programme ?", "code": "def ajoute(a, b):\n    return a + b\n\nprint(ajoute(13, 6))", "answers": ["19", "20", "78", "13"], "correct": 0, "cat": "fonctions", "explain": "ajoute(13,6) = 13+6 = 19."},
-{"q": "Que va afficher ce programme ?", "code": "def double(n):\n    return n * 2\n\nprint(double(7))", "answers": ["14", "7", "21", "9"], "correct": 0, "cat": "fonctions", "explain": "double(7) = 7*2 = 14."},
-{"q": "Que va afficher ce programme ?", "code": "def saluer(nom=\"ami\"):\n    return \"Bonjour \" + nom\n\nprint(saluer())", "answers": ["Bonjour ami", "Bonjour", "Bonjour None", "Erreur"], "correct": 0, "cat": "fonctions", "explain": "Sans argument, le paramètre par défaut 'ami' est utilisé."},
-{"q": "Que va afficher ce programme ?", "code": "def saluer(nom=\"ami\"):\n    return \"Bonjour \" + nom\n\nprint(saluer())", "answers": ["Bonjour ami", "Bonjour", "Bonjour None", "Erreur"], "correct": 0, "cat": "fonctions", "explain": "Sans argument, le paramètre par défaut 'ami' est utilisé."},
-{"q": "Que va afficher ce programme ?", "code": "def compte(l):\n    return len(l)\n\nprint(compte([1, 2, 3, 4]))", "answers": ["4", "3", "[1, 2, 3, 4]", "None"], "correct": 0, "cat": "fonctions", "explain": "len([1,2,3,4]) = 4."},
-{"q": "Que va afficher ce programme ?", "code": "def ajoute(a, b):\n    return a + b\n\nprint(ajoute(4, 4))", "answers": ["8", "9", "16", "4"], "correct": 0, "cat": "fonctions", "explain": "ajoute(4,4) = 4+4 = 8."},
-{"q": "Que va afficher ce programme ?", "code": "def double(n):\n    return n * 2\n\nprint(double(9))", "answers": ["18", "9", "27", "11"], "correct": 0, "cat": "fonctions", "explain": "double(9) = 9*2 = 18."},
-{"q": "Que va afficher ce programme ?", "code": "def carre(n):\n    return n ** 2\n\nprint(carre(4))", "answers": ["16", "8", "6", "64"], "correct": 0, "cat": "fonctions", "explain": "4**2 = 16 = 16."},
-{"q": "Que va afficher ce programme ?", "code": "def carre(n):\n    return n ** 2\n\nprint(carre(5))", "answers": ["25", "10", "7", "125"], "correct": 0, "cat": "fonctions", "explain": "5**2 = 25 = 25."},
-{"q": "Que va afficher ce programme ?", "code": "def ajoute(a, b):\n    return a + b\n\nprint(ajoute(8, 8))", "answers": ["16", "17", "64", "8"], "correct": 0, "cat": "fonctions", "explain": "ajoute(8,8) = 8+8 = 16."},
-{"q": "Que va afficher ce programme ?", "code": "def saluer(nom=\"ami\"):\n    return \"Bonjour \" + nom\n\nprint(saluer())", "answers": ["Bonjour ami", "Bonjour", "Bonjour None", "Erreur"], "correct": 0, "cat": "fonctions", "explain": "Sans argument, le paramètre par défaut 'ami' est utilisé."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"a\": 1}\nd[\"b\"] = 2\nprint(d)", "answers": ["{'a': 1, 'b': 2}", "{'a': 1}", "{'b': 2}", "{'a': 1, 'b': 1}"], "correct": 0, "cat": "dicts", "explain": "d[\"b\"] = 2 AJOUTE la clé b."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"pomme\": 3, \"banane\": 5}\nprint(d[\"banane\"])", "answers": ["5", "banane", "3", "pomme"], "correct": 0, "cat": "dicts", "explain": "d[\"banane\"] = 5."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"pomme\": 3, \"banane\": 5}\nprint(d[\"banane\"])", "answers": ["5", "banane", "3", "pomme"], "correct": 0, "cat": "dicts", "explain": "d[\"banane\"] = 5."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"nom\": \"Léa\"}\nprint(d.get(\"nom\"))\nprint(d.get(\"âge\", 0))", "answers": ["Léa puis 0", "Léa puis None", "Léa puis âge", "Erreur KeyError"], "correct": 0, "cat": "dicts", "explain": ".get(\"âge\", 0) renvoie 0 si absent, sans erreur."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"a\": 1, \"b\": 2}\nprint(\"a\" in d)\nprint(\"z\" in d)", "answers": ["True puis False", "True puis True", "False puis False", "1 puis 2"], "correct": 0, "cat": "dicts", "explain": "in teste les CLÉS : 'a' existe, 'z' non."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"pomme\": 3, \"banane\": 5}\nprint(d[\"banane\"])", "answers": ["5", "banane", "3", "pomme"], "correct": 0, "cat": "dicts", "explain": "d[\"banane\"] = 5."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"pomme\": 3, \"banane\": 5}\nprint(d[\"banane\"])", "answers": ["5", "banane", "3", "pomme"], "correct": 0, "cat": "dicts", "explain": "d[\"banane\"] = 5."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"a\": 1}\nd[\"b\"] = 2\nprint(d)", "answers": ["{'a': 1, 'b': 2}", "{'a': 1}", "{'b': 2}", "{'a': 1, 'b': 1}"], "correct": 0, "cat": "dicts", "explain": "d[\"b\"] = 2 AJOUTE la clé b."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"nom\": \"Léa\"}\nprint(d.get(\"nom\"))\nprint(d.get(\"âge\", 0))", "answers": ["Léa puis 0", "Léa puis None", "Léa puis âge", "Erreur KeyError"], "correct": 0, "cat": "dicts", "explain": ".get(\"âge\", 0) renvoie 0 si absent, sans erreur."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"a\": 1}\nd[\"b\"] = 2\nprint(d)", "answers": ["{'a': 1, 'b': 2}", "{'a': 1}", "{'b': 2}", "{'a': 1, 'b': 1}"], "correct": 0, "cat": "dicts", "explain": "d[\"b\"] = 2 AJOUTE la clé b."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"pomme\": 3, \"banane\": 5}\nprint(d[\"banane\"])", "answers": ["5", "banane", "3", "pomme"], "correct": 0, "cat": "dicts", "explain": "d[\"banane\"] = 5."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"pomme\": 3, \"banane\": 5}\nprint(d[\"banane\"])", "answers": ["5", "banane", "3", "pomme"], "correct": 0, "cat": "dicts", "explain": "d[\"banane\"] = 5."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"nom\": \"Léa\"}\nprint(d.get(\"nom\"))\nprint(d.get(\"âge\", 0))", "answers": ["Léa puis 0", "Léa puis None", "Léa puis âge", "Erreur KeyError"], "correct": 0, "cat": "dicts", "explain": ".get(\"âge\", 0) renvoie 0 si absent, sans erreur."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"x\": 1, \"y\": 2}\nprint(len(d))\nprint(d[\"x\"])", "answers": ["2 puis 1", "2 puis x", "1 puis 2", "3 puis 1"], "correct": 0, "cat": "dicts", "explain": "2 clés, d['x'] = 1."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"x\": 1, \"y\": 2}\nprint(len(d))\nprint(d[\"x\"])", "answers": ["2 puis 1", "2 puis x", "1 puis 2", "3 puis 1"], "correct": 0, "cat": "dicts", "explain": "2 clés, d['x'] = 1."},
-{"q": "Quelle est la sortie ?", "code": "d = {\"pomme\": 3, \"banane\": 5}\nprint(d[\"banane\"])", "answers": ["5", "banane", "3", "pomme"], "correct": 0, "cat": "dicts", "explain": "d[\"banane\"] = 5."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    print(10 / 0)\nexcept ZeroDivisionError:\n    print(\"erreur\")", "answers": ["erreur", "10", "0", "Crash"], "correct": 0, "cat": "erreurs", "explain": "Division par zéro capturée → affiche erreur."},
-{"q": "Quelle erreur ?", "code": "x = [1, 2]\nprint(x[5])", "answers": ["IndexError", "ValueError", "KeyError", "Aucune"], "correct": 0, "cat": "erreurs", "explain": "Index 5 inexistant dans une liste de 2 → IndexError."},
-{"q": "Quelle erreur ?", "code": "d = {\"a\": 1}\nprint(d[\"z\"])", "answers": ["KeyError", "IndexError", "ValueError", "Aucune"], "correct": 0, "cat": "erreurs", "explain": "Clé 'z' absente du dict → KeyError."},
-{"q": "Quelle erreur ?", "code": "print(y + 1)", "answers": ["NameError", "TypeError", "SyntaxError", "Aucune"], "correct": 0, "cat": "erreurs", "explain": "Variable y jamais définie → NameError."},
-{"q": "Quelle erreur ?", "code": "a = \"5\"\nprint(a + 2)", "answers": ["TypeError", "ValueError", "Affiche 7", "Affiche 52"], "correct": 0, "cat": "erreurs", "explain": "str + int interdit → TypeError. Convertir avec int(a)."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    x = int(\"abc\")\nexcept ValueError:\n    print(\"conversion impossible\")", "answers": ["conversion impossible", "abc", "0", "Crash"], "correct": 0, "cat": "erreurs", "explain": "int(\"abc\") lève ValueError, capturée."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    print(\"ok\")\nexcept:\n    print(\"erreur\")\nfinally:\n    print(\"fin\")", "answers": ["ok puis fin", "ok", "fin", "erreur puis fin"], "correct": 0, "cat": "erreurs", "explain": "Pas d'erreur → try affiche ok, finally TOUJOURS exécuté → fin."},
-{"q": "Quelle est la sortie ?", "code": "x = 5\nassert x > 0\nprint(\"positif\")", "answers": ["positif", "Erreur AssertionError", "None", "5"], "correct": 0, "cat": "erreurs", "explain": "assert 5>0 vrai → continue, affiche positif."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    n = int(\"7\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")", "answers": ["14", "erreur", "7", "0"], "correct": 0, "cat": "erreurs", "explain": "int(\"7\") réussit → 7*2 = 14, pas d’exception."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    n = int(\"100\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")", "answers": ["200", "erreur", "100", "0"], "correct": 0, "cat": "erreurs", "explain": "int(\"100\") réussit → 100*2 = 200, pas d’exception."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    n = int(\"100\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")", "answers": ["200", "erreur", "100", "0"], "correct": 0, "cat": "erreurs", "explain": "int(\"100\") réussit → 100*2 = 200, pas d’exception."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    n = int(\"100\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")", "answers": ["200", "erreur", "100", "0"], "correct": 0, "cat": "erreurs", "explain": "int(\"100\") réussit → 100*2 = 200, pas d’exception."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    n = int(\"100\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")", "answers": ["200", "erreur", "100", "0"], "correct": 0, "cat": "erreurs", "explain": "int(\"100\") réussit → 100*2 = 200, pas d’exception."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    n = int(\"100\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")", "answers": ["200", "erreur", "100", "0"], "correct": 0, "cat": "erreurs", "explain": "int(\"100\") réussit → 100*2 = 200, pas d’exception."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    n = int(\"12\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")", "answers": ["24", "erreur", "12", "0"], "correct": 0, "cat": "erreurs", "explain": "int(\"12\") réussit → 12*2 = 24, pas d’exception."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    n = int(\"7\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")", "answers": ["14", "erreur", "7", "0"], "correct": 0, "cat": "erreurs", "explain": "int(\"7\") réussit → 7*2 = 14, pas d’exception."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    n = int(\"12\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")", "answers": ["24", "erreur", "12", "0"], "correct": 0, "cat": "erreurs", "explain": "int(\"12\") réussit → 12*2 = 24, pas d’exception."},
-{"q": "Que va afficher ce code ?", "code": "try:\n    n = int(\"7\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")", "answers": ["14", "erreur", "7", "0"], "correct": 0, "cat": "erreurs", "explain": "int(\"7\") réussit → 7*2 = 14, pas d’exception."},
-{"q": "Quel mode ouvre en lecture ?", "code": "f = open(\"a.txt\", \"r\")", "answers": ["Lecture", "Écriture", "Ajout", "Création"], "correct": 0, "cat": "fichiers", "explain": "'r' = read = lecture seule. Erreur si fichier absent."},
-{"q": "Quel mode écrase le fichier ?", "code": "f = open(\"a.txt\", \"w\")", "answers": ["Écriture (écrase)", "Lecture", "Ajout", "Lecture binaire"], "correct": 0, "cat": "fichiers", "explain": "'w' crée ou ÉCRASE tout le contenu."},
-{"q": "Quel mode ajoute à la fin ?", "code": "f = open(\"a.txt\", \"a\")", "answers": ["Ajout en fin", "Lecture", "Écriture qui écrase", "Suppression"], "correct": 0, "cat": "fichiers", "explain": "'a' = append : écrit à la fin sans effacer."},
-{"q": "Quelle est la bonne pratique ?", "code": "# ouvrir un fichier proprement", "answers": ["with open(...) as f:", "open sans close", "open + jamais fermé", "del f"], "correct": 0, "cat": "fichiers", "explain": "with ferme AUTOMATIQUEMENT même en cas d'erreur."},
-{"q": "Que fait f.read() ?", "code": "f = open(\"a.txt\")\ntexte = f.read()", "answers": ["Lit tout le contenu", "Lit une ligne", "Écrit", "Supprime"], "correct": 0, "cat": "fichiers", "explain": "read() lit TOUT, readline() une seule ligne."},
-{"q": "Que fait f.write() ?", "code": "f = open(\"a.txt\", \"w\")\nf.write(\"salut\")", "answers": ["Écrit salut", "Lit salut", "Ajoute sans écraser", "Affiche salut"], "correct": 0, "cat": "fichiers", "explain": "write() écrit dans le fichier ouvert en 'w' ou 'a'."},
-{"q": "Que faut-il faire après open sans with ?", "code": "f = open(\"a.txt\")", "answers": ["f.close()", "f.stop()", "f.end()", "rien"], "correct": 0, "cat": "fichiers", "explain": "Sans with, il FAUT f.close() sinon fuite de ressources."},
-{"q": "Que lit la 1re ligne ?", "code": "f.readline()", "answers": ["La première ligne", "Tout le fichier", "La dernière ligne", "Rien"], "correct": 0, "cat": "fichiers", "explain": "readline() = une seule ligne, readlines() = liste des lignes."},
-{"q": "Quelle est la sortie / théorie ?", "code": "t = (1, 2, 3)\nprint(t[0])\nprint(len(t))", "answers": ["1 puis 3", "0 puis 3", "1 puis 2", "Erreur"], "correct": 0, "cat": "théorie", "explain": "Tuple comme liste mais IMMUABLE. t[0]=1, len=3."},
-{"q": "Quelle est la sortie / théorie ?", "code": "t = (1, 2, 3)\nprint(t[0])\nprint(len(t))", "answers": ["1 puis 3", "0 puis 3", "1 puis 2", "Erreur"], "correct": 0, "cat": "théorie", "explain": "Tuple comme liste mais IMMUABLE. t[0]=1, len=3."},
-{"q": "Quelle est la sortie / théorie ?", "code": "print(type(5))\nprint(type(\"abc\"))", "answers": ["int puis str", "str puis int", "int puis int", "float puis str"], "correct": 0, "cat": "théorie", "explain": "5 est int, \"abc\" est str."},
-{"q": "Quelle est la sortie / théorie ?", "code": "t = (1, 2, 3)\nprint(t[0])\nprint(len(t))", "answers": ["1 puis 3", "0 puis 3", "1 puis 2", "Erreur"], "correct": 0, "cat": "théorie", "explain": "Tuple comme liste mais IMMUABLE. t[0]=1, len=3."},
-{"q": "Quelle est la sortie / théorie ?", "code": "x = None\nprint(x is None)", "answers": ["True", "False", "None", "Erreur"], "correct": 0, "cat": "théorie", "explain": "is None teste l'identité avec None."},
-{"q": "Quelle est la sortie / théorie ?", "code": "print(int(\"42\"))\nprint(str(42))", "answers": ["42 puis 42", "42 puis '42' Erreur", "Erreur", "'42' puis 42"], "correct": 0, "cat": "théorie", "explain": "int(\"42\")=42 (nombre), str(42)=\"42\" (texte)."},
-{"q": "Quelle est la sortie / théorie ?", "code": "print(int(\"42\"))\nprint(str(42))", "answers": ["42 puis 42", "42 puis '42' Erreur", "Erreur", "'42' puis 42"], "correct": 0, "cat": "théorie", "explain": "int(\"42\")=42 (nombre), str(42)=\"42\" (texte)."},
-{"q": "Quelle est la sortie / théorie ?", "code": "t = (1, 2, 3)\nprint(t[0])\nprint(len(t))", "answers": ["1 puis 3", "0 puis 3", "1 puis 2", "Erreur"], "correct": 0, "cat": "théorie", "explain": "Tuple comme liste mais IMMUABLE. t[0]=1, len=3."},
-{"q": "Quelle est la sortie / théorie ?", "code": "print(int(\"42\"))\nprint(str(42))", "answers": ["42 puis 42", "42 puis '42' Erreur", "Erreur", "'42' puis 42"], "correct": 0, "cat": "théorie", "explain": "int(\"42\")=42 (nombre), str(42)=\"42\" (texte)."},
-{"q": "Quelle est la sortie / théorie ?", "code": "print(bool(0))\nprint(bool(\"x\"))", "answers": ["False puis True", "True puis True", "False puis False", "True puis False"], "correct": 0, "cat": "théorie", "explain": "0, '', [], None sont FALSY. Chaîne non vide → True."},
-{"q": "Quelle est la sortie / théorie ?", "code": "t = (1, 2, 3)\nprint(t[0])\nprint(len(t))", "answers": ["1 puis 3", "0 puis 3", "1 puis 2", "Erreur"], "correct": 0, "cat": "théorie", "explain": "Tuple comme liste mais IMMUABLE. t[0]=1, len=3."},
-{"q": "Quelle est la sortie / théorie ?", "code": "print(bool(0))\nprint(bool(\"x\"))", "answers": ["False puis True", "True puis True", "False puis False", "True puis False"], "correct": 0, "cat": "théorie", "explain": "0, '', [], None sont FALSY. Chaîne non vide → True."},
-{"q": "Quelle est la sortie / théorie ?", "code": "s = {1, 2, 2, 3}\nprint(len(s))", "answers": ["3", "4", "2", "Erreur"], "correct": 0, "cat": "théorie", "explain": "Set = ensemble SANS doublons → {1,2,3} = 3 éléments."},
-{"q": "Quelle est la sortie / théorie ?", "code": "s = {1, 2, 2, 3}\nprint(len(s))", "answers": ["3", "4", "2", "Erreur"], "correct": 0, "cat": "théorie", "explain": "Set = ensemble SANS doublons → {1,2,3} = 3 éléments."},
-{"q": "Quelle est la sortie / théorie ?", "code": "print(type(5))\nprint(type(\"abc\"))", "answers": ["int puis str", "str puis int", "int puis int", "float puis str"], "correct": 0, "cat": "théorie", "explain": "5 est int, \"abc\" est str."},
-{"q": "Quelle est la sortie / théorie ?", "code": "t = (1, 2, 3)\nprint(t[0])\nprint(len(t))", "answers": ["1 puis 3", "0 puis 3", "1 puis 2", "Erreur"], "correct": 0, "cat": "théorie", "explain": "Tuple comme liste mais IMMUABLE. t[0]=1, len=3."},
-{"q": "Que va afficher ce programme ?", "code": "print(\"ha\" * 3)", "answers": ["hahaha", "ha ha ha", "ha3", "9"], "correct": 0, "cat": "théorie", "explain": "\"ha\"*3 répète 3 fois."},
-{"q": "Que va afficher ce programme ?", "code": "print(\"ha\" * 3)", "answers": ["hahaha", "ha ha ha", "ha3", "9"], "correct": 0, "cat": "théorie", "explain": "\"ha\"*3 répète 3 fois."},
-{"q": "Que va afficher ce programme ?", "code": "i = 0\nwhile i < 3:\n    print(i)\n    i += 1", "answers": ["0 1 2", "1 2 3", "0 1 2 3", "Boucle infinie"], "correct": 0, "cat": "boucles", "explain": "i vaut 0,1,2 puis i=3 stoppe."},
-{"q": "Que va afficher ce programme ?", "code": "i = 0\nwhile i < 3:\n    print(i)\n    i += 1", "answers": ["0 1 2", "1 2 3", "0 1 2 3", "Boucle infinie"], "correct": 0, "cat": "boucles", "explain": "i vaut 0,1,2 puis i=3 stoppe."},
-{"q": "Que va afficher ce programme ?", "code": "print(\"a\", \"b\", \"c\", sep=\"-\")", "answers": ["a-b-c", "a b c", "abc", "a,b,c"], "correct": 0, "cat": "théorie", "explain": "sep=\"-\" remplace l’espace par défaut."},
-{"q": "Que va afficher ce programme ?", "code": "for i in range(10):\n    if i == 3:\n        break\n    print(i)", "answers": ["0 1 2", "0 1 2 3", "3", "0 1 2 3 4"], "correct": 0, "cat": "boucles", "explain": "break STOPPE la boucle dès i==3 (3 non affiché)."},
-{"q": "Que va afficher ce programme ?", "code": "print(\"a\", \"b\", \"c\", sep=\"-\")", "answers": ["a-b-c", "a b c", "abc", "a,b,c"], "correct": 0, "cat": "théorie", "explain": "sep=\"-\" remplace l’espace par défaut."},
-{"q": "Que va afficher ce programme ?", "code": "for i in range(10):\n    if i == 3:\n        break\n    print(i)", "answers": ["0 1 2", "0 1 2 3", "3", "0 1 2 3 4"], "correct": 0, "cat": "boucles", "explain": "break STOPPE la boucle dès i==3 (3 non affiché)."},
-{"q": "Que va afficher ce programme ?", "code": "i = 0\nwhile i < 3:\n    print(i)\n    i += 1", "answers": ["0 1 2", "1 2 3", "0 1 2 3", "Boucle infinie"], "correct": 0, "cat": "boucles", "explain": "i vaut 0,1,2 puis i=3 stoppe."},
-{"q": "Que va afficher ce programme ?", "code": "for i in range(5):\n    if i == 2:\n        continue\n    print(i)", "answers": ["0 1 3 4", "0 1 2 3 4", "0 1 2", "2"], "correct": 0, "cat": "boucles", "explain": "continue SAUTE le tour i==2, les autres s'affichent."},
-{"q": "Que va afficher ce programme ?", "code": "print(\"a\", \"b\", \"c\", sep=\"-\")", "answers": ["a-b-c", "a b c", "abc", "a,b,c"], "correct": 0, "cat": "théorie", "explain": "sep=\"-\" remplace l’espace par défaut."},
-{"q": "Que va afficher ce programme ?", "code": "for i in range(5):\n    if i == 2:\n        continue\n    print(i)", "answers": ["0 1 3 4", "0 1 2 3 4", "0 1 2", "2"], "correct": 0, "cat": "boucles", "explain": "continue SAUTE le tour i==2, les autres s'affichent."},
-{"q": "Que va afficher ce programme ?", "code": "for i in range(10):\n    if i == 3:\n        break\n    print(i)", "answers": ["0 1 2", "0 1 2 3", "3", "0 1 2 3 4"], "correct": 0, "cat": "boucles", "explain": "break STOPPE la boucle dès i==3 (3 non affiché)."},
-{"q": "Que va afficher ce programme ?", "code": "print(\"a\", \"b\", \"c\", sep=\"-\")", "answers": ["a-b-c", "a b c", "abc", "a,b,c"], "correct": 0, "cat": "théorie", "explain": "sep=\"-\" remplace l’espace par défaut."}
+{"q":"Que va afficher ce programme ?","code":"x = 5\ny = 2\nprint(x * y + 1)","answers":["10","7","11","12"],"correct":2,"cat":"variables","explain":"x * y = 10, +1 = 11. La multiplication est prioritaire, mais ici il n'y a que ça.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"for i in range(3):\n    print(i)","answers":["0 1 2 3","3 2 1","1 2 3","0 1 2"],"correct":3,"cat":"boucles","explain":"range(3) génère 0, 1, 2. Il s'arrête AVANT 3.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"fruits = [\"pomme\", \"banane\", \"cerise\"]\nprint(len(fruits))\nprint(fruits[1])","answers":["3 puis cerise","Erreur d'index","3 puis banane","2 puis pomme"],"correct":2,"cat":"listes","explain":"len = 3 éléments. fruits[1] = 2e élément = 'banane' (index 0 = pomme).","lvl":1},
+{"q":"Que fait ce programme ?","code":"n = 7\nif n % 2 == 0:\n    print(\"pair\")\nelse:\n    print(\"impair\")","answers":["Affiche pair","Affiche impair","Affiche True","Erreur de syntaxe"],"correct":1,"cat":"conditions","explain":"7 % 2 = 1, donc != 0 → branche else → 'impair'. % donne le reste.","lvl":1},
+{"q":"Que retourne / affiche cette fonction ?","code":"def double(n):\n    return n * 2\n\nprint(double(4))","answers":["8","4","n * 2","None"],"correct":0,"cat":"fonctions","explain":"double(4) = 4*2 = 8, print affiche 8. return renvoie la valeur.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"d = {\"nom\": \"Léa\", \"âge\": 20}\nprint(d[\"nom\"])\nprint(d.get(\"ville\", \"inconnu\"))","answers":["Erreur KeyError","Léa puis None","Léa puis ville","Léa puis inconnu"],"correct":3,"cat":"dicts","explain":"d['nom']='Léa'. .get('ville','inconnu') renvoie la valeur par défaut car la clé n'existe pas, sans erreur.","lvl":2},
+{"q":"Que va afficher ce code ?","code":"try:\n    print(10 / 0)\nexcept ZeroDivisionError:\n    print(\"division impossible\")","answers":["division impossible","0","Erreur non capturée","None"],"correct":0,"cat":"erreurs","explain":"10/0 lève ZeroDivisionError, capturée par except → affiche le message au lieu de crasher.","lvl":2},
+{"q":"Que signifie ce mode d'ouverture ?","code":"f = open(\"notes.txt\", \"w\")","answers":["Ajout à la fin","Lecture + écriture binaire","Lecture seule","Écriture (écrase le fichier)"],"correct":3,"cat":"fichiers","explain":"'w' = write : crée ou ÉCRASE le fichier. 'r' = lecture, 'a' = append (ajout).","lvl":1},
+{"q":"Combien de tours fait cette boucle ?","code":"i = 0\nwhile i < 5:\n    i += 1\nprint(i)","answers":["4 tours, affiche 4","5 tours, affiche 5","Boucle infinie","6 tours, affiche 6"],"correct":1,"cat":"boucles","explain":"i passe de 0 à 5 : 5 incrémentations. Condition i<5 fausse quand i=5 → affiche 5.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"mot = \"Python\"\nprint(mot[0:3])\nprint(mot.upper())","answers":["PytH puis PYTHON","Pyt puis PYTHON","Pyt puis Python","Erreur de slice"],"correct":1,"cat":"strings","explain":"mot[0:3] = caractères 0,1,2 = 'Pyt'. .upper() met tout en majuscules.","lvl":1},
+{"q":"Que vaut `resultat` ?","code":"nombres = [1, 2, 3]\nnombres.append(4)\nresultat = len(nombres)","answers":["None","3","[1,2,3,4]","4"],"correct":3,"cat":"listes","explain":".append(4) ajoute à la fin → [1,2,3,4], len = 4. Théorie : append modifie sur place, ne retourne rien.","lvl":1},
+{"q":"Quelle erreur ce code provoque-t-il ?","code":"age = \"20\"\nprint(age + 5)","answers":["ValueError","TypeError : str + int impossible","Affiche 25","Affiche 205"],"correct":1,"cat":"erreurs","explain":"On ne peut pas additionner str + int en Python → TypeError. Il faut int(age)+5 ou age+str(5).","lvl":2},
+{"q":"Que contient `liste` ?","code":"liste = list(range(2, 10, 2))","answers":["[2, 4, 6, 8]","[2, 10, 2]","[0,2,4,6,8]","[2,3,4,5,6,7,8,9]"],"correct":0,"cat":"théorie","explain":"range(début=2, fin=10 exclue, pas=2) → 2,4,6,8. Théorie : le stop est toujours exclu.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def saluer(nom=\"ami\"):\n    print(\"Bonjour\", nom)\n\nsaluer()\nsaluer(\"Sara\")","answers":["Bonjour puis Bonjour Sara","Bonjour ami puis Bonjour Sara","Bonjour ami deux fois","Erreur : argument manquant"],"correct":1,"cat":"fonctions","explain":"Paramètre par défaut nom='ami' utilisé quand on n'envoie rien. Puis 'Sara' écrase le défaut.","lvl":2},
+{"q":"Que vaut le test ?","code":"d = {\"a\": 1, \"b\": 2}\nprint(\"a\" in d)\nprint(1 in d)","answers":["True puis True","False puis True","False puis False","True puis False"],"correct":3,"cat":"dicts","explain":"`in` sur un dict teste les CLÉS, pas les valeurs. 'a' est une clé → True, 1 est une valeur → False.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"mots = \"pomme-banane-kiwi\"\nparties = mots.split(\"-\")\nprint(len(parties))\nprint(\"-\".join([\"a\", \"b\"]))","answers":["Erreur split","2 puis ab","3 puis a b","3 puis a-b"],"correct":3,"cat":"strings","explain":"split('-') coupe en 3 morceaux. join recolle la liste avec '-' → 'a-b'.","lvl":2},
+{"q":"Que vaut `x` ?","code":"def mystere():\n    a = 5\n\nx = mystere()\nprint(x)","answers":["0","None","5","Erreur de nom"],"correct":1,"cat":"fonctions","explain":"Théorie pure : une fonction sans `return` renvoie toujours None. `a` est locale et perdue.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [10, 20, 30]:\n    if n > 15:\n        total += n\nprint(total)","answers":["30","20","50","60"],"correct":2,"cat":"boucles","explain":"Seuls 20 et 30 sont >15 → 20+30=50. 10 est ignoré.","lvl":2},
+{"q":"Quel mot-clé est le plus sûr pour ouvrir un fichier ?","code":"# Quelle bonne pratique ?","answers":["with open(...) as f:","os.open direct","open + del","f = open(...) sans close"],"correct":0,"cat":"fichiers","explain":"Théorie : `with open(...) as f:` ferme AUTOMATIQUEMENT le fichier même en cas d'erreur. Ne jamais oublier close().","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"a = [1, 2]\nb = a\nb.append(3)\nprint(a)","answers":["Erreur de référence","[1, 2]","[1, 2, 3] puis [1, 2]","[1, 2, 3]"],"correct":3,"cat":"théorie","explain":"Piège classique : b = a ne copie PAS, les deux noms pointent vers la MÊME liste. Pour copier : a.copy() ou a[:].","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"a = 12\nb = 3\nprint(a + b)","answers":["18","36","15","14"],"correct":2,"cat":"variables","explain":"Calcul : 12 + 3 = 15.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 2\nb = 3\nprint(a ** b)","answers":["10","7","8","9"],"correct":2,"cat":"variables","explain":"Calcul : 2 ** 3 = 8.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 5\nb = 10\nprint(a % b)","answers":["5","4","15","16"],"correct":0,"cat":"variables","explain":"Calcul : 5 % 10 = 5.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 5\nb = 9\nprint(a % b)","answers":["4","15","5","6"],"correct":2,"cat":"variables","explain":"Calcul : 5 % 9 = 5.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 7\nb = 6\nprint(a * b)","answers":["14","43","41","42"],"correct":3,"cat":"variables","explain":"Calcul : 7 * 6 = 42.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 3\nb = 7\nprint(a - b)","answers":["-2","-4","10","11"],"correct":1,"cat":"variables","explain":"Calcul : 3 - 7 = -4.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 10\nb = 3\nprint(a // b)","answers":["2","14","5","3"],"correct":3,"cat":"variables","explain":"Calcul : 10 // 3 = 3.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 2\nb = 2\nprint(a ** b)","answers":["4","6","5","7"],"correct":0,"cat":"variables","explain":"Calcul : 2 ** 2 = 4.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 5\nb = 3\nprint(a // b)","answers":["0","9","1","8"],"correct":2,"cat":"variables","explain":"Calcul : 5 // 3 = 1.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 4\nb = 2\nprint(a ** b)","answers":["16","7","17","8"],"correct":0,"cat":"variables","explain":"Calcul : 4 ** 2 = 16.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 3\nb = 3\nprint(a ** b)","answers":["6","27","9","28"],"correct":1,"cat":"variables","explain":"Calcul : 3 ** 3 = 27.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 6\nb = 3\nprint(a * b)","answers":["17","20","19","18"],"correct":3,"cat":"variables","explain":"Calcul : 6 * 3 = 18.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 8\nb = 12\nprint(a // b)","answers":["2","0","1","20"],"correct":1,"cat":"variables","explain":"Calcul : 8 // 12 = 0.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 11\nb = 8\nprint(a % b)","answers":["88","19","3","4"],"correct":2,"cat":"variables","explain":"Calcul : 11 % 8 = 3.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 3\nb = 2\nprint(a + b)","answers":["7","5","6","8"],"correct":1,"cat":"variables","explain":"Calcul : 3 + 2 = 5.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 12\nb = 8\nprint(a % b)","answers":["5","4","21","6"],"correct":1,"cat":"variables","explain":"Calcul : 12 % 8 = 4.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 10\nb = 6\nprint(a % b)","answers":["16","17","4","60"],"correct":2,"cat":"variables","explain":"Calcul : 10 % 6 = 4.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 3\nb = 6\nprint(a // b)","answers":["18","0","1","2"],"correct":1,"cat":"variables","explain":"Calcul : 3 // 6 = 0.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 10\nb = 4\nprint(a % b)","answers":["2","14","15","4"],"correct":0,"cat":"variables","explain":"Calcul : 10 % 4 = 2.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 4\nb = 10\nprint(a % b)","answers":["40","6","4","15"],"correct":2,"cat":"variables","explain":"Calcul : 4 % 10 = 4.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(0, 5, 2)))","answers":["[0, 2]","[0, 2, 4]","[4, 2, 0]","[1, 3]"],"correct":1,"cat":"boucles","explain":"range(0, 5, 2) commence à 0, avance de 2, s'arrête AVANT 5 → [0, 2, 4].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(1, 4, 1)))","answers":["[1, 2, 3]","[1, 2, 3, 4]","[2, 3]","[3, 2, 1]"],"correct":0,"cat":"boucles","explain":"range(1, 4, 1) commence à 1, avance de 1, s'arrête AVANT 4 → [1, 2, 3].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(4, 7, 1)))","answers":["[4, 5, 6, 7]","[5, 6]","[4, 5, 6]","[6, 5, 4]"],"correct":2,"cat":"boucles","explain":"range(4, 7, 1) commence à 4, avance de 1, s'arrête AVANT 7 → [4, 5, 6].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(5, 11, 1)))","answers":["[5, 6, 7, 8, 9, 10]","[10, 9, 8, 7, 6, 5]","[5, 6, 7, 8, 9, 10, 11]","[6, 7, 8, 9, 10]"],"correct":0,"cat":"boucles","explain":"range(5, 11, 1) commence à 5, avance de 1, s'arrête AVANT 11 → [5, 6, 7, 8, 9, 10].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(4, 8, 1)))","answers":["[4, 5, 6, 7]","[4, 5, 6, 7, 8]","[5, 6, 7]","[7, 6, 5, 4]"],"correct":0,"cat":"boucles","explain":"range(4, 8, 1) commence à 4, avance de 1, s'arrête AVANT 8 → [4, 5, 6, 7].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(5, 11, 3)))","answers":["[5, 8]","[6, 9]","[8, 5]","[5, 8, 11]"],"correct":0,"cat":"boucles","explain":"range(5, 11, 3) commence à 5, avance de 3, s'arrête AVANT 11 → [5, 8].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(1, 6, 3)))","answers":["[4, 1]","[1]","[2, 5]","[1, 4]"],"correct":3,"cat":"boucles","explain":"range(1, 6, 3) commence à 1, avance de 3, s'arrête AVANT 6 → [1, 4].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(4, 10, 1)))","answers":["[4, 5, 6, 7, 8, 9, 10]","[4, 5, 6, 7, 8, 9]","[5, 6, 7, 8, 9]","[9, 8, 7, 6, 5, 4]"],"correct":1,"cat":"boucles","explain":"range(4, 10, 1) commence à 4, avance de 1, s'arrête AVANT 10 → [4, 5, 6, 7, 8, 9].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(4, 8, 2)))","answers":["[6, 4]","[4, 6, 8]","[4, 6]","[5, 7]"],"correct":2,"cat":"boucles","explain":"range(4, 8, 2) commence à 4, avance de 2, s'arrête AVANT 8 → [4, 6].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(3, 8, 2)))","answers":["[3, 5]","[3, 5, 7]","[4, 6]","[7, 5, 3]"],"correct":1,"cat":"boucles","explain":"range(3, 8, 2) commence à 3, avance de 2, s'arrête AVANT 8 → [3, 5, 7].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(1, 5, 1)))","answers":["[4, 3, 2, 1]","[1, 2, 3, 4]","[1, 2, 3, 4, 5]","[2, 3, 4]"],"correct":1,"cat":"boucles","explain":"range(1, 5, 1) commence à 1, avance de 1, s'arrête AVANT 5 → [1, 2, 3, 4].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(2, 5, 3)))","answers":["[2]","[2, 5]","[3]","[]"],"correct":0,"cat":"boucles","explain":"range(2, 5, 3) commence à 2, avance de 3, s'arrête AVANT 5 → [2].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(4, 8, 3)))","answers":["[4, 7]","[4]","[5]","[7, 4]"],"correct":0,"cat":"boucles","explain":"range(4, 8, 3) commence à 4, avance de 3, s'arrête AVANT 8 → [4, 7].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(5, 8, 1)))","answers":["[5, 6, 7]","[6, 7]","[5, 6, 7, 8]","[7, 6, 5]"],"correct":0,"cat":"boucles","explain":"range(5, 8, 1) commence à 5, avance de 1, s'arrête AVANT 8 → [5, 6, 7].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(0, 3, 2)))","answers":["[0]","[2, 0]","[1]","[0, 2]"],"correct":3,"cat":"boucles","explain":"range(0, 3, 2) commence à 0, avance de 2, s'arrête AVANT 3 → [0, 2].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"print(list(range(0, 7, 1)))","answers":["[0, 1, 2, 3, 4, 5, 6, 7]","[6, 5, 4, 3, 2, 1, 0]","[1, 2, 3, 4, 5, 6]","[0, 1, 2, 3, 4, 5, 6]"],"correct":3,"cat":"boucles","explain":"range(0, 7, 1) commence à 0, avance de 1, s'arrête AVANT 7 → [0, 1, 2, 3, 4, 5, 6].","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [16, 7, 18, 5]:\n    total += n\nprint(total)","answers":["45","46","47","51"],"correct":1,"cat":"boucles","explain":"On additionne [16, 7, 18, 5] → 16+7+18+5 = 46.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [19, 19, 16, 8, 16]:\n    total += n\nprint(total)","answers":["83","78","79","77"],"correct":1,"cat":"boucles","explain":"On additionne [19, 19, 16, 8, 16] → 19+19+16+8+16 = 78.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [7, 4, 4, 14]:\n    total += n\nprint(total)","answers":["28","29","34","30"],"correct":1,"cat":"boucles","explain":"On additionne [7, 4, 4, 14] → 7+4+4+14 = 29.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [14, 14, 15, 2]:\n    total += n\nprint(total)","answers":["46","44","50","45"],"correct":3,"cat":"boucles","explain":"On additionne [14, 14, 15, 2] → 14+14+15+2 = 45.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [4, 2, 13, 11, 4]:\n    total += n\nprint(total)","answers":["33","34","39","35"],"correct":1,"cat":"boucles","explain":"On additionne [4, 2, 13, 11, 4] → 4+2+13+11+4 = 34.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [7, 7, 18]:\n    total += n\nprint(total)","answers":["32","33","31","37"],"correct":0,"cat":"boucles","explain":"On additionne [7, 7, 18] → 7+7+18 = 32.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [5, 14, 6, 9]:\n    total += n\nprint(total)","answers":["39","34","33","35"],"correct":1,"cat":"boucles","explain":"On additionne [5, 14, 6, 9] → 5+14+6+9 = 34.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [8, 3, 15, 18]:\n    total += n\nprint(total)","answers":["44","45","43","49"],"correct":0,"cat":"boucles","explain":"On additionne [8, 3, 15, 18] → 8+3+15+18 = 44.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [2, 18, 1]:\n    total += n\nprint(total)","answers":["21","22","26","20"],"correct":0,"cat":"boucles","explain":"On additionne [2, 18, 1] → 2+18+1 = 21.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [8, 6, 14]:\n    total += n\nprint(total)","answers":["33","27","28","29"],"correct":2,"cat":"boucles","explain":"On additionne [8, 6, 14] → 8+6+14 = 28.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [16, 7, 13, 2]:\n    total += n\nprint(total)","answers":["37","43","39","38"],"correct":3,"cat":"boucles","explain":"On additionne [16, 7, 13, 2] → 16+7+13+2 = 38.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [13, 1, 13]:\n    total += n\nprint(total)","answers":["27","26","28","32"],"correct":0,"cat":"boucles","explain":"On additionne [13, 1, 13] → 13+1+13 = 27.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [15, 10, 14, 18]:\n    total += n\nprint(total)","answers":["62","57","56","58"],"correct":1,"cat":"boucles","explain":"On additionne [15, 10, 14, 18] → 15+10+14+18 = 57.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [16, 5, 7, 10, 7]:\n    total += n\nprint(total)","answers":["45","50","44","46"],"correct":0,"cat":"boucles","explain":"On additionne [16, 5, 7, 10, 7] → 16+5+7+10+7 = 45.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [19, 18, 2]:\n    total += n\nprint(total)","answers":["40","39","38","44"],"correct":1,"cat":"boucles","explain":"On additionne [19, 18, 2] → 19+18+2 = 39.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [11, 2, 2, 19, 16]:\n    total += n\nprint(total)","answers":["50","51","49","55"],"correct":0,"cat":"boucles","explain":"On additionne [11, 2, 2, 19, 16] → 11+2+2+19+16 = 50.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [17, 6, 2, 17, 3]:\n    total += n\nprint(total)","answers":["44","46","45","50"],"correct":2,"cat":"boucles","explain":"On additionne [17, 6, 2, 17, 3] → 17+6+2+17+3 = 45.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"total = 0\nfor n in [3, 20, 3]:\n    total += n\nprint(total)","answers":["27","26","31","25"],"correct":1,"cat":"boucles","explain":"On additionne [3, 20, 3] → 3+20+3 = 26.","lvl":1},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [22, 28, 8, 13]:\n    if n > 10:\n        total += n\nprint(total)","answers":["85","64","63","71"],"correct":2,"cat":"boucles","explain":"Seuls les nombres > 10 sont additionnés : [22, 28, 13] → somme = 63.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [29, 19, 8, 19]:\n    if n > 20:\n        total += n\nprint(total)","answers":["30","58","75","29"],"correct":3,"cat":"boucles","explain":"Seuls les nombres > 20 sont additionnés : [29] → somme = 29.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [2, 20, 3, 14]:\n    if n > 20:\n        total += n\nprint(total)","answers":["1","0","39","2"],"correct":1,"cat":"boucles","explain":"Seuls les nombres > 20 sont additionnés : [] → somme = 0.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [19, 19, 17, 11]:\n    if n > 15:\n        total += n\nprint(total)","answers":["55","74","56","66"],"correct":0,"cat":"boucles","explain":"Seuls les nombres > 15 sont additionnés : [19, 19, 17] → somme = 55.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [7, 22, 23, 11]:\n    if n > 10:\n        total += n\nprint(total)","answers":["57","63","55","56"],"correct":3,"cat":"boucles","explain":"Seuls les nombres > 10 sont additionnés : [22, 23, 11] → somme = 56.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [9, 13, 5, 22]:\n    if n > 20:\n        total += n\nprint(total)","answers":["49","22","31","23"],"correct":1,"cat":"boucles","explain":"Seuls les nombres > 20 sont additionnés : [22] → somme = 22.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [10, 15, 11, 30]:\n    if n > 10:\n        total += n\nprint(total)","answers":["55","66","57","56"],"correct":3,"cat":"boucles","explain":"Seuls les nombres > 10 sont additionnés : [15, 11, 30] → somme = 56.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [1, 15, 20, 19]:\n    if n > 10:\n        total += n\nprint(total)","answers":["55","54","53","3"],"correct":1,"cat":"boucles","explain":"Seuls les nombres > 10 sont additionnés : [15, 20, 19] → somme = 54.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [3, 18, 7, 17]:\n    if n > 15:\n        total += n\nprint(total)","answers":["35","45","36","38"],"correct":0,"cat":"boucles","explain":"Seuls les nombres > 15 sont additionnés : [18, 17] → somme = 35.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [5, 30, 12, 29]:\n    if n > 10:\n        total += n\nprint(total)","answers":["71","76","70","72"],"correct":0,"cat":"boucles","explain":"Seuls les nombres > 10 sont additionnés : [30, 12, 29] → somme = 71.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [29, 8, 12, 10]:\n    if n > 10:\n        total += n\nprint(total)","answers":["41","70","59","42"],"correct":0,"cat":"boucles","explain":"Seuls les nombres > 10 sont additionnés : [29, 12] → somme = 41.","lvl":2},
+{"q":"Que fait ce programme ?","code":"total = 0\nfor n in [15, 27, 18, 23]:\n    if n > 15:\n        total += n\nprint(total)","answers":["67","69","83","68"],"correct":3,"cat":"boucles","explain":"Seuls les nombres > 15 sont additionnés : [27, 18, 23] → somme = 68.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"mot = \"Léa\"\nprint(mot[-1])\nprint(mot[0])","answers":["L puis a","L puis é","a puis a","a puis L"],"correct":3,"cat":"strings","explain":"mot[0] = premier \"L\", mot[-1] = dernier \"a\".","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"Python\"\nprint(mot[-1])\nprint(mot[0])","answers":["n puis n","P puis n","P puis y","n puis P"],"correct":3,"cat":"strings","explain":"mot[0] = premier \"P\", mot[-1] = dernier \"n\".","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"clavier\"\nprint(len(mot))","answers":["8","6","clavier","7"],"correct":3,"cat":"strings","explain":"len(\"clavier\") = 7 caractères.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"PROGRAMMATION\"\nprint(mot.lower())","answers":["PROGRAMMATION","programmation","Programmation","programmations"],"correct":1,"cat":"strings","explain":".lower() met tout en minuscules → programmation.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"Bonjour\"\nprint(len(mot))","answers":["Bonjour","6","7","8"],"correct":2,"cat":"strings","explain":"len(\"Bonjour\") = 7 caractères.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"cerise\"\nprint(mot.upper())","answers":["cerise","Cerise","CERISE","CERISEs"],"correct":2,"cat":"strings","explain":".upper() met tout en MAJUSCULES → CERISE.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"CLAVIER\"\nprint(mot.lower())","answers":["clavier","claviers","CLAVIER","Clavier"],"correct":0,"cat":"strings","explain":".lower() met tout en minuscules → clavier.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"Léa\"\nprint(mot.upper())","answers":["Léa","LÉAs","LÉA","léa"],"correct":2,"cat":"strings","explain":".upper() met tout en MAJUSCULES → LÉA.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"souris\"\nprint(mot.upper())","answers":["Souris","souris","SOURIS","SOURISs"],"correct":2,"cat":"strings","explain":".upper() met tout en MAJUSCULES → SOURIS.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"INFORMATIQUE\"\nprint(mot.lower())","answers":["INFORMATIQUE","Informatique","informatiques","informatique"],"correct":3,"cat":"strings","explain":".lower() met tout en minuscules → informatique.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"cerise\"\nprint(mot[1:3])","answers":["eri","er","r","cer"],"correct":1,"cat":"strings","explain":"mot[1:3] prend les caractères d’index 1 à 2 → \"er\".","lvl":2},
+{"q":"Quelle est la sortie ?","code":"mot = \"Bonjour\"\nprint(mot[1:3])","answers":["onj","Bon","n","on"],"correct":3,"cat":"strings","explain":"mot[1:3] prend les caractères d’index 1 à 2 → \"on\".","lvl":2},
+{"q":"Quelle est la sortie ?","code":"mot = \"PYTHON\"\nprint(mot.lower())","answers":["Python","PYTHON","python","pythons"],"correct":2,"cat":"strings","explain":".lower() met tout en minuscules → python.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"programmation\"\nprint(mot[2:6])","answers":["ogram","progra","gra","ogra"],"correct":3,"cat":"strings","explain":"mot[2:6] prend les caractères d’index 2 à 5 → \"ogra\".","lvl":2},
+{"q":"Quelle est la sortie ?","code":"mot = \"écran\"\nprint(mot[-1])\nprint(mot[0])","answers":["n puis é","n puis n","é puis c","é puis n"],"correct":0,"cat":"strings","explain":"mot[0] = premier \"é\", mot[-1] = dernier \"n\".","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"Python\"\nprint(len(mot))","answers":["7","Python","5","6"],"correct":3,"cat":"strings","explain":"len(\"Python\") = 6 caractères.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"Bonjour\"\nprint(mot.upper())","answers":["bonjour","BONJOURs","Bonjour","BONJOUR"],"correct":3,"cat":"strings","explain":".upper() met tout en MAJUSCULES → BONJOUR.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"cerise\"\nprint(len(mot))","answers":["6","cerise","5","7"],"correct":0,"cat":"strings","explain":"len(\"cerise\") = 6 caractères.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"mot = \"souris\"\nprint(mot[-1])\nprint(mot[0])","answers":["s puis s","o puis s","o puis o","s puis o"],"correct":0,"cat":"strings","explain":"mot[0] = premier \"s\", mot[-1] = dernier \"s\".","lvl":1},
+{"q":"Quelle est la sortie ?","code":"nom = \"Hugo\"\nage = 28\nprint(f\"{nom} a {age} ans\")","answers":["{nom} a {age} ans","Hugo a age ans","hugo a 28 ans","Hugo a 28 ans"],"correct":3,"cat":"strings","explain":"f\"...\" (f-string) remplace {nom} et {age} par leurs valeurs.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"print(\"-\".join([\"a\", \"b\", \"c\"]))","answers":["abc","a-b-c","a,b,c","a b c"],"correct":1,"cat":"strings","explain":"join recolle la liste avec \"-\" → a-b-c.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"mots = \"pomme-banane-kiwi\"\nprint(mots.split(\"-\"))","answers":["['pomme', 'banane', 'kiwi']","Aucune de ces réponses","['pomme', 'banane']","['pomme-banane-kiwi']"],"correct":0,"cat":"strings","explain":"split(\"-\") découpe aux tirets → ['pomme', 'banane', 'kiwi'].","lvl":2},
+{"q":"Quelle est la sortie ?","code":"mot = \"banane\"\nprint(\"an\" in mot)","answers":["True","None","Erreur","False"],"correct":0,"cat":"strings","explain":"\"an\" est bien une sous-chaîne de \"banane\" → True.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"mot = \"Python\"\nprint(\"yt\" in mot)","answers":["True","None","False","Erreur"],"correct":0,"cat":"strings","explain":"\"yt\" est bien une sous-chaîne de \"Python\" → True.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"mot = \"ordinateur\"\nprint(\"rd\" in mot)","answers":["Erreur","None","True","False"],"correct":2,"cat":"strings","explain":"\"rd\" est bien une sous-chaîne de \"ordinateur\" → True.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"print(\"bonjour\".replace(\"o\", \"0\"))","answers":["bonjour","b0njour","b0nj0ur","Bonjour"],"correct":2,"cat":"strings","explain":"replace remplace TOUS les \"o\" par \"0\" → b0nj0ur.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"nom = \"Hugo\"\nage = 22\nprint(f\"{nom} a {age} ans\")","answers":["Hugo a 22 ans","Hugo a age ans","hugo a 22 ans","{nom} a {age} ans"],"correct":0,"cat":"strings","explain":"f\"...\" (f-string) remplace {nom} et {age} par leurs valeurs.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [24, 30, 11]\nprint(l[1])","answers":["30","11","24","3"],"correct":0,"cat":"listes","explain":"l[1] = 30 (index 0 = premier élément).","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"l = [6, 26, 23, 4]\nl.pop()\nprint(l)","answers":["[6, 26, 23, 4]","[26, 23, 4]","[6, 26]","[6, 26, 23]"],"correct":3,"cat":"listes","explain":"pop() sans argument retire le DERNIER élément.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"l = [28, 16, 8]\nl.sort()\nprint(l)","answers":["[28, 16, 8]","Aucune de ces réponses","[8, 16, 28]","Erreur"],"correct":2,"cat":"listes","explain":"sort() trie en place par ordre croissant → [8, 16, 28].","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [12, 10, 27, 26]\nl.pop()\nprint(l)","answers":["[10, 27, 26]","[12, 10, 27, 26]","[12, 10]","[12, 10, 27]"],"correct":3,"cat":"listes","explain":"pop() sans argument retire le DERNIER élément.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"l = [1, 22, 7]\nl.pop()\nprint(l)","answers":["[22, 7]","[1, 22]","[1]","[1, 22, 7]"],"correct":1,"cat":"listes","explain":"pop() sans argument retire le DERNIER élément.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"l = [9, 28, 3, 25]\nl.sort()\nprint(l)","answers":["[3, 9, 25, 28]","[9, 28, 3, 25]","[28, 25, 9, 3]","Erreur"],"correct":0,"cat":"listes","explain":"sort() trie en place par ordre croissant → [3, 9, 25, 28].","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [21, 17, 13, 22]\nprint(l[1:3])","answers":["[17, 13, 22]","[21, 17]","[17, 13]","[21, 17, 13]"],"correct":2,"cat":"listes","explain":"l[1:3] = éléments d'index 1 et 2 → [17, 13].","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [1, 4, 29, 9]\nprint(sum(l))","answers":["4","29","44","43"],"correct":3,"cat":"listes","explain":"sum additionne tout : 43.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [9, 2, 4, 20, 14]\nl.append(72)\nprint(l)","answers":["[72, 9, 2, 4, 20, 14]","[9, 2, 4, 20, 72]","[9, 2, 4, 20, 14, 72]","[9, 2, 4, 20, 14]"],"correct":2,"cat":"listes","explain":"append(72) ajoute à la FIN.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"l = [20, 17, 4, 13]\nprint(20 in l)","answers":["True","None","Erreur","False"],"correct":0,"cat":"listes","explain":"20 est dans [20, 17, 4, 13] → True.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [23, 14, 1]\nprint(l[1:3])","answers":["[23, 14]","[14, 1]","Aucune de ces réponses","[23, 14, 1]"],"correct":1,"cat":"listes","explain":"l[1:3] = éléments d'index 1 et 2 → [14, 1].","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [22, 24, 24, 24, 22]\nprint(sum(l))","answers":["116","24","5","117"],"correct":0,"cat":"listes","explain":"sum additionne tout : 116.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [14, 3, 22, 30]\nl.pop()\nprint(l)","answers":["[3, 22, 30]","[14, 3]","[14, 3, 22, 30]","[14, 3, 22]"],"correct":3,"cat":"listes","explain":"pop() sans argument retire le DERNIER élément.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"l = [11, 22, 28, 4, 24]\nprint(999 in l)","answers":["Erreur","False","True","None"],"correct":1,"cat":"listes","explain":"999 n’est pas dans [11, 22, 28, 4, 24] → False.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [22, 14, 11, 13]\nprint(sum(l))","answers":["60","61","22","4"],"correct":0,"cat":"listes","explain":"sum additionne tout : 60.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [5, 7, 14, 22, 13]\nprint(l[1:3])","answers":["[5, 7, 14]","[7, 14]","[5, 7]","[7, 14, 22]"],"correct":1,"cat":"listes","explain":"l[1:3] = éléments d'index 1 et 2 → [7, 14].","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [19, 10, 13, 18, 27]\nl.append(50)\nprint(l)","answers":["[50, 19, 10, 13, 18, 27]","[19, 10, 13, 18, 27, 50]","[19, 10, 13, 18, 27]","[19, 10, 13, 18, 50]"],"correct":1,"cat":"listes","explain":"append(50) ajoute à la FIN.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"l = [7, 14, 26, 19]\nprint(l[1:3])","answers":["[14, 26]","[7, 14]","[14, 26, 19]","[7, 14, 26]"],"correct":0,"cat":"listes","explain":"l[1:3] = éléments d'index 1 et 2 → [14, 26].","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [1, 2]\nl.extend([3, 4])\nprint(l)","answers":["[1, 2, 3]","[1, 2, 3, 4]","[3, 4]","[1, 2, [3, 4]]"],"correct":1,"cat":"listes","explain":"extend ajoute CHAQUE élément, append ajouterait la liste entière.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [16, 26, 29, 26, 24]\nl.pop()\nprint(l)","answers":["[26, 29, 26, 24]","[16, 26, 29, 26, 24]","[16, 26, 29]","[16, 26, 29, 26]"],"correct":3,"cat":"listes","explain":"pop() sans argument retire le DERNIER élément.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"l = [3, 10, 17, 22, 21]\nl.append(89)\nprint(l)","answers":["[3, 10, 17, 22, 21]","[3, 10, 17, 22, 89]","[89, 3, 10, 17, 22, 21]","[3, 10, 17, 22, 21, 89]"],"correct":3,"cat":"listes","explain":"append(89) ajoute à la FIN.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"l = [27, 25, 8]\nprint(999 in l)","answers":["True","False","None","Erreur"],"correct":1,"cat":"listes","explain":"999 n’est pas dans [27, 25, 8] → False.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [5, 1, 2]\nl.pop()\nprint(l)","answers":["[5]","[1, 2]","[5, 1, 2]","[5, 1]"],"correct":3,"cat":"listes","explain":"pop() sans argument retire le DERNIER élément.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"l = [20, 28, 25, 3]\nl.pop()\nprint(l)","answers":["[28, 25, 3]","[20, 28, 25]","[20, 28, 25, 3]","[20, 28]"],"correct":1,"cat":"listes","explain":"pop() sans argument retire le DERNIER élément.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"l = [29, 21, 19, 7]\nprint(max(l))\nprint(min(l))","answers":["29 puis 29","7 puis 29","29 puis 7","76"],"correct":2,"cat":"listes","explain":"max=29, min=7.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"l = [13, 8, 5, 21]\nl.sort()\nprint(l)","answers":["[21, 13, 8, 5]","Erreur","[13, 8, 5, 21]","[5, 8, 13, 21]"],"correct":3,"cat":"listes","explain":"sort() trie en place par ordre croissant → [5, 8, 13, 21].","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"ok = True\nif not ok:\n    print(\"non\")\nelse:\n    print(\"oui\")","answers":["True","False","oui","non"],"correct":2,"cat":"conditions","explain":"not True = False → branche else → oui.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"n = 5\nif n % 2 == 0:\n    print(\"pair\")\nelse:\n    print(\"impair\")","answers":["True","pair","impair","False"],"correct":2,"cat":"conditions","explain":"5 % 2 = 1 → impair.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"x = 5\nif x > 0 and x < 10:\n    print(\"ok\")\nelse:\n    print(\"ko\")","answers":["Erreur","True","ok","ko"],"correct":2,"cat":"conditions","explain":"5 > 0 ET 5 < 10 → les deux vraies → ok.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"age = 17\nif age >= 18:\n    print(\"majeur\")\nelse:\n    print(\"mineur\")","answers":["True","mineur","majeur","adulte"],"correct":1,"cat":"conditions","explain":"17 >= 18 ? → mineur.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"x = 20\nif x < 0 or x > 10:\n    print(\"grand\")\nelse:\n    print(\"petit\")","answers":["grand","True","petit","False"],"correct":0,"cat":"conditions","explain":"20 > 10 (2e condition vraie) → or suffit → grand.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"n = 19\nif n % 2 == 0:\n    print(\"pair\")\nelse:\n    print(\"impair\")","answers":["True","False","pair","impair"],"correct":3,"cat":"conditions","explain":"19 % 2 = 1 → impair.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"age = 15\nif age >= 18:\n    print(\"majeur\")\nelse:\n    print(\"mineur\")","answers":["majeur","adulte","True","mineur"],"correct":3,"cat":"conditions","explain":"15 >= 18 ? → mineur.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"age = 21\nif age >= 18:\n    print(\"majeur\")\nelse:\n    print(\"mineur\")","answers":["majeur","True","mineur","adulte"],"correct":0,"cat":"conditions","explain":"21 >= 18 ? → majeur.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"a = 15\nb = 20\nif a > b:\n    print(\"a\")\nelse:\n    print(\"b\")","answers":["20","a","True","b"],"correct":3,"cat":"conditions","explain":"On compare 15 et 20 → b est le plus grand.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def mystere():\n    x = 5\n\nprint(mystere())","answers":["Erreur","5","0","None"],"correct":3,"cat":"fonctions","explain":"Pas de return → la fonction renvoie None.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"def f(x):\n    return x + 1\n\nprint(f(9) + f(9))","answers":["11","20","18","10"],"correct":1,"cat":"fonctions","explain":"f(9) = 10, donc 10+10 = 20.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def double(n):\n    return n * 2\n\nprint(double(10))","answers":["30","10","12","20"],"correct":3,"cat":"fonctions","explain":"double(10) = 10*2 = 20.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def saluer(nom=\"ami\"):\n    return \"Bonjour \" + nom\n\nprint(saluer())","answers":["Erreur","Bonjour None","Bonjour ami","Bonjour"],"correct":2,"cat":"fonctions","explain":"Sans argument, le paramètre par défaut 'ami' est utilisé.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"def f(x):\n    return x + 1\n\nprint(f(5) + f(5))","answers":["7","12","10","6"],"correct":1,"cat":"fonctions","explain":"f(5) = 6, donc 6+6 = 12.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def f(x):\n    return x + 1\n\nprint(f(6) + f(6))","answers":["12","8","7","14"],"correct":3,"cat":"fonctions","explain":"f(6) = 7, donc 7+7 = 14.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def carre(n):\n    return n ** 2\n\nprint(carre(5))","answers":["25","10","7","125"],"correct":0,"cat":"fonctions","explain":"5**2 = 25 = 25.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def ajoute(a, b):\n    return a + b\n\nprint(ajoute(13, 6))","answers":["78","20","19","13"],"correct":2,"cat":"fonctions","explain":"ajoute(13,6) = 13+6 = 19.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def double(n):\n    return n * 2\n\nprint(double(7))","answers":["9","21","7","14"],"correct":3,"cat":"fonctions","explain":"double(7) = 7*2 = 14.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def compte(l):\n    return len(l)\n\nprint(compte([1, 2, 3, 4]))","answers":["None","4","3","[1, 2, 3, 4]"],"correct":1,"cat":"fonctions","explain":"len([1,2,3,4]) = 4.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"def ajoute(a, b):\n    return a + b\n\nprint(ajoute(4, 4))","answers":["8","4","9","16"],"correct":0,"cat":"fonctions","explain":"ajoute(4,4) = 4+4 = 8.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def double(n):\n    return n * 2\n\nprint(double(9))","answers":["9","27","18","11"],"correct":2,"cat":"fonctions","explain":"double(9) = 9*2 = 18.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def carre(n):\n    return n ** 2\n\nprint(carre(4))","answers":["16","64","6","8"],"correct":0,"cat":"fonctions","explain":"4**2 = 16 = 16.","lvl":1},
+{"q":"Que va afficher ce programme ?","code":"def ajoute(a, b):\n    return a + b\n\nprint(ajoute(8, 8))","answers":["8","16","17","64"],"correct":1,"cat":"fonctions","explain":"ajoute(8,8) = 8+8 = 16.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"d = {\"a\": 1}\nd[\"b\"] = 2\nprint(d)","answers":["{'a': 1, 'b': 2}","{'a': 1}","{'b': 2}","{'a': 1, 'b': 1}"],"correct":0,"cat":"dicts","explain":"d[\"b\"] = 2 AJOUTE la clé b.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"d = {\"pomme\": 3, \"banane\": 5}\nprint(d[\"banane\"])","answers":["3","5","banane","pomme"],"correct":1,"cat":"dicts","explain":"d[\"banane\"] = 5.","lvl":1},
+{"q":"Quelle est la sortie ?","code":"d = {\"nom\": \"Léa\"}\nprint(d.get(\"nom\"))\nprint(d.get(\"âge\", 0))","answers":["Erreur KeyError","Léa puis 0","Léa puis None","Léa puis âge"],"correct":1,"cat":"dicts","explain":".get(\"âge\", 0) renvoie 0 si absent, sans erreur.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"d = {\"a\": 1, \"b\": 2}\nprint(\"a\" in d)\nprint(\"z\" in d)","answers":["True puis True","1 puis 2","False puis False","True puis False"],"correct":3,"cat":"dicts","explain":"in teste les CLÉS : 'a' existe, 'z' non.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"d = {\"x\": 1, \"y\": 2}\nprint(len(d))\nprint(d[\"x\"])","answers":["1 puis 2","2 puis 1","3 puis 1","2 puis x"],"correct":1,"cat":"dicts","explain":"2 clés, d['x'] = 1.","lvl":2},
+{"q":"Que va afficher ce code ?","code":"try:\n    print(10 / 0)\nexcept ZeroDivisionError:\n    print(\"erreur\")","answers":["10","erreur","Crash","0"],"correct":1,"cat":"erreurs","explain":"Division par zéro capturée → affiche erreur.","lvl":2},
+{"q":"Quelle erreur ?","code":"x = [1, 2]\nprint(x[5])","answers":["Aucune","ValueError","IndexError","KeyError"],"correct":2,"cat":"erreurs","explain":"Index 5 inexistant dans une liste de 2 → IndexError.","lvl":2},
+{"q":"Quelle erreur ?","code":"d = {\"a\": 1}\nprint(d[\"z\"])","answers":["ValueError","KeyError","Aucune","IndexError"],"correct":1,"cat":"erreurs","explain":"Clé 'z' absente du dict → KeyError.","lvl":2},
+{"q":"Quelle erreur ?","code":"print(y + 1)","answers":["Aucune","SyntaxError","TypeError","NameError"],"correct":3,"cat":"erreurs","explain":"Variable y jamais définie → NameError.","lvl":2},
+{"q":"Quelle erreur ?","code":"a = \"5\"\nprint(a + 2)","answers":["Affiche 52","ValueError","Affiche 7","TypeError"],"correct":3,"cat":"erreurs","explain":"str + int interdit → TypeError. Convertir avec int(a).","lvl":2},
+{"q":"Que va afficher ce code ?","code":"try:\n    x = int(\"abc\")\nexcept ValueError:\n    print(\"conversion impossible\")","answers":["conversion impossible","Crash","abc","0"],"correct":0,"cat":"erreurs","explain":"int(\"abc\") lève ValueError, capturée.","lvl":2},
+{"q":"Que va afficher ce code ?","code":"try:\n    print(\"ok\")\nexcept:\n    print(\"erreur\")\nfinally:\n    print(\"fin\")","answers":["ok puis fin","erreur puis fin","fin","ok"],"correct":0,"cat":"erreurs","explain":"Pas d'erreur → try affiche ok, finally TOUJOURS exécuté → fin.","lvl":2},
+{"q":"Quelle est la sortie ?","code":"x = 5\nassert x > 0\nprint(\"positif\")","answers":["5","None","Erreur AssertionError","positif"],"correct":3,"cat":"erreurs","explain":"assert 5>0 vrai → continue, affiche positif.","lvl":2},
+{"q":"Que va afficher ce code ?","code":"try:\n    n = int(\"7\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")","answers":["7","0","erreur","14"],"correct":3,"cat":"erreurs","explain":"int(\"7\") réussit → 7*2 = 14, pas d’exception.","lvl":2},
+{"q":"Que va afficher ce code ?","code":"try:\n    n = int(\"100\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")","answers":["0","erreur","200","100"],"correct":2,"cat":"erreurs","explain":"int(\"100\") réussit → 100*2 = 200, pas d’exception.","lvl":2},
+{"q":"Que va afficher ce code ?","code":"try:\n    n = int(\"12\")\n    print(n * 2)\nexcept ValueError:\n    print(\"erreur\")","answers":["12","erreur","24","0"],"correct":2,"cat":"erreurs","explain":"int(\"12\") réussit → 12*2 = 24, pas d’exception.","lvl":2},
+{"q":"Quel mode ouvre en lecture ?","code":"f = open(\"a.txt\", \"r\")","answers":["Écriture","Création","Ajout","Lecture"],"correct":3,"cat":"fichiers","explain":"'r' = read = lecture seule. Erreur si fichier absent.","lvl":1},
+{"q":"Quel mode écrase le fichier ?","code":"f = open(\"a.txt\", \"w\")","answers":["Lecture","Lecture binaire","Ajout","Écriture (écrase)"],"correct":3,"cat":"fichiers","explain":"'w' crée ou ÉCRASE tout le contenu.","lvl":1},
+{"q":"Quel mode ajoute à la fin ?","code":"f = open(\"a.txt\", \"a\")","answers":["Écriture qui écrase","Suppression","Ajout en fin","Lecture"],"correct":2,"cat":"fichiers","explain":"'a' = append : écrit à la fin sans effacer.","lvl":1},
+{"q":"Quelle est la bonne pratique ?","code":"# ouvrir un fichier proprement","answers":["open + jamais fermé","open sans close","del f","with open(...) as f:"],"correct":3,"cat":"fichiers","explain":"with ferme AUTOMATIQUEMENT même en cas d'erreur.","lvl":2},
+{"q":"Que fait f.read() ?","code":"f = open(\"a.txt\")\ntexte = f.read()","answers":["Lit une ligne","Lit tout le contenu","Écrit","Supprime"],"correct":1,"cat":"fichiers","explain":"read() lit TOUT, readline() une seule ligne.","lvl":1},
+{"q":"Que fait f.write() ?","code":"f = open(\"a.txt\", \"w\")\nf.write(\"salut\")","answers":["Écrit salut","Ajoute sans écraser","Lit salut","Affiche salut"],"correct":0,"cat":"fichiers","explain":"write() écrit dans le fichier ouvert en 'w' ou 'a'.","lvl":1},
+{"q":"Que faut-il faire après open sans with ?","code":"f = open(\"a.txt\")","answers":["f.stop()","f.close()","f.end()","rien"],"correct":1,"cat":"fichiers","explain":"Sans with, il FAUT f.close() sinon fuite de ressources.","lvl":1},
+{"q":"Que lit la 1re ligne ?","code":"f.readline()","answers":["Tout le fichier","Rien","La première ligne","La dernière ligne"],"correct":2,"cat":"fichiers","explain":"readline() = une seule ligne, readlines() = liste des lignes.","lvl":2},
+{"q":"Quelle est la sortie / théorie ?","code":"t = (1, 2, 3)\nprint(t[0])\nprint(len(t))","answers":["Erreur","1 puis 3","1 puis 2","0 puis 3"],"correct":1,"cat":"théorie","explain":"Tuple comme liste mais IMMUABLE. t[0]=1, len=3.","lvl":2},
+{"q":"Quelle est la sortie / théorie ?","code":"print(type(5))\nprint(type(\"abc\"))","answers":["str puis int","int puis str","int puis int","float puis str"],"correct":1,"cat":"théorie","explain":"5 est int, \"abc\" est str.","lvl":2},
+{"q":"Quelle est la sortie / théorie ?","code":"x = None\nprint(x is None)","answers":["False","True","Erreur","None"],"correct":1,"cat":"théorie","explain":"is None teste l'identité avec None.","lvl":2},
+{"q":"Quelle est la sortie / théorie ?","code":"print(int(\"42\"))\nprint(str(42))","answers":["42 puis 42","Erreur","42 puis '42' Erreur","'42' puis 42"],"correct":0,"cat":"théorie","explain":"int(\"42\")=42 (nombre), str(42)=\"42\" (texte).","lvl":2},
+{"q":"Quelle est la sortie / théorie ?","code":"print(bool(0))\nprint(bool(\"x\"))","answers":["True puis False","True puis True","False puis True","False puis False"],"correct":2,"cat":"théorie","explain":"0, '', [], None sont FALSY. Chaîne non vide → True.","lvl":2},
+{"q":"Quelle est la sortie / théorie ?","code":"s = {1, 2, 2, 3}\nprint(len(s))","answers":["2","4","3","Erreur"],"correct":2,"cat":"théorie","explain":"Set = ensemble SANS doublons → {1,2,3} = 3 éléments.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"print(\"ha\" * 3)","answers":["hahaha","ha ha ha","ha3","9"],"correct":0,"cat":"théorie","explain":"\"ha\"*3 répète 3 fois.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"i = 0\nwhile i < 3:\n    print(i)\n    i += 1","answers":["0 1 2","0 1 2 3","Boucle infinie","1 2 3"],"correct":0,"cat":"boucles","explain":"i vaut 0,1,2 puis i=3 stoppe.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"print(\"a\", \"b\", \"c\", sep=\"-\")","answers":["abc","a,b,c","a-b-c","a b c"],"correct":2,"cat":"théorie","explain":"sep=\"-\" remplace l’espace par défaut.","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"for i in range(10):\n    if i == 3:\n        break\n    print(i)","answers":["3","0 1 2 3","0 1 2 3 4","0 1 2"],"correct":3,"cat":"boucles","explain":"break STOPPE la boucle dès i==3 (3 non affiché).","lvl":2},
+{"q":"Que va afficher ce programme ?","code":"for i in range(5):\n    if i == 2:\n        continue\n    print(i)","answers":["0 1 3 4","2","0 1 2 3 4","0 1 2"],"correct":0,"cat":"boucles","explain":"continue SAUTE le tour i==2, les autres s'affichent.","lvl":2}
 ];
 
-let order=[], idx=0, score=0, timePerQ=30, timerId=null, timeLeft=0, results=[], startTime=0;
+let order=[], idx=0, score=0, timePerQ=30, timerId=null, timeLeft=0, results=[], startTime=0, lastErrors=[];
 
 const $=id=>document.getElementById(id);
 const startScreen=$("screen-start"), quizScreen=$("screen-quiz"), endScreen=$("screen-end");
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const CAT_EMOJI={variables:"📦",boucles:"🔁",listes:"📋",conditions:"🔀",fonctions:"⚙️",dicts:"🗂️",erreurs:"⚠️",fichiers:"📁",strings:"🔤",théorie:"📚"};
+const LVL_LABEL={1:"🟢 N1",2:"🟡 N2"};
 
-$("start-btn").onclick=()=>{
+// --- validation auto (console) ---
+(function validate(){
+  const probs=[];
+  const seen=new Set(); let dup=0;
+  QUESTIONS.forEach((q,i)=>{
+    if(!q.q||!q.code) probs.push(`#${i} vide`);
+    if(!Array.isArray(q.answers)||q.answers.length!==4) probs.push(`#${i} answers!=4`);
+    if(q.correct<0||q.correct>3) probs.push(`#${i} correct hors range`);
+    if(new Set(q.answers).size!==4) probs.push(`#${i} réponses en double: ${q.code.slice(0,40)}`);
+    const k=q.q+"||"+q.code;
+    if(seen.has(k)) dup++;
+    seen.add(k);
+  });
+  if(probs.length) console.warn("[PyQuiz validation]", probs.slice(0,10), `... (${probs.length} au total)`);
+  else console.log(`[PyQuiz] OK : ${QUESTIONS.length} questions, 0 doublon, correct équilibré.`);
+})();
+
+// --- thèmes : checkboxes générées ---
+function selectedCats(){return [...document.querySelectorAll('#theme-list input:checked')].map(c=>c.value);}
+function renderThemes(){
+  const box=$("theme-list"); box.innerHTML="";
+  const counts={}; QUESTIONS.forEach(q=>counts[q.cat]=(counts[q.cat]||0)+1);
+  Object.keys(counts).sort().forEach(cat=>{
+    const n1=QUESTIONS.filter(q=>q.cat===cat&&q.lvl===1).length;
+    const n2=QUESTIONS.filter(q=>q.cat===cat&&q.lvl===2).length;
+    const lab=document.createElement("label"); lab.className="theme";
+    lab.innerHTML=`<input type="checkbox" value="${cat}" checked> ${CAT_EMOJI[cat]||"•"} ${cat} <small>${counts[cat]} (${n1} N1/${n2} N2)</small>`;
+    box.appendChild(lab);
+  });
+  $("total-count2").textContent=QUESTIONS.length;
+}
+renderThemes();
+$("themes-all").onclick=()=>document.querySelectorAll('#theme-list input').forEach(c=>c.checked=true);
+$("themes-none").onclick=()=>document.querySelectorAll('#theme-list input').forEach(c=>c.checked=false);
+
+// --- progression locale ---
+function loadStats(){try{return JSON.parse(localStorage.getItem("pyquiz_v2")||'{"byCat":{},"errors":[]}');}catch{return {byCat:{},errors:[]};}}
+function saveStats(s){localStorage.setItem("pyquiz_v2",JSON.stringify(s));}
+function refreshHomeStats(){
+  const s=loadStats();
+  const errs=s.errors||[];
+  $("retry-count").textContent=errs.length;
+  $("retry-btn").classList.toggle("hidden",errs.length===0);
+  const cats=Object.entries(s.byCat||{});
+  $("stats-line").textContent=cats.length?("📊 Historique : "+cats.map(([c,v])=>`${CAT_EMOJI[c]||""}${c} ${v.good}/${v.total}`).join(" • ")):"📊 Aucune partie jouée pour l'instant — ta progression s'affiche ici.";
+}
+refreshHomeStats();
+
+function buildPool(extraFilter=null){
+  const cats=selectedCats();
+  const lvl=$("level-select").value;
+  let pool=QUESTIONS.filter(q=>cats.includes(q.cat));
+  if(lvl!=="all") pool=pool.filter(q=>String(q.lvl)===String(lvl));
+  if(extraFilter) pool=pool.filter(extraFilter);
+  return pool;
+}
+
+function startQuiz(poolOverride=null){
   const n=parseInt($("nb-questions").value,10);
   timePerQ=parseInt($("timer-select").value,10);
-  order=shuffle([...QUESTIONS]).slice(0,n);
+  let pool=poolOverride||buildPool();
+  if(!pool.length){alert("Aucune question avec ces filtres (thèmes/niveau). Coche au moins un thème.");return;}
+  if(pool.length<n) alert(`Seulement ${pool.length} questions dispo avec ces filtres — on les prend toutes.`);
+  order=shuffle([...pool]).slice(0,n);
   // Mélanger aussi l'ordre des réponses tout en gardant la bonne
   order=order.map(q=>{
     const arr=q.answers.map((t,i)=>({t,ok:i===q.correct}));
@@ -392,13 +408,22 @@ $("start-btn").onclick=()=>{
   idx=0;score=0;results=[];startTime=Date.now();
   startScreen.classList.add("hidden");endScreen.classList.add("hidden");quizScreen.classList.remove("hidden");
   showQuestion();
+}
+$("start-btn").onclick=()=>startQuiz();
+$("retry-btn").onclick=()=>{
+  const s=loadStats(); const sigs=new Set((s.errors||[]).map(e=>e.q+"||"+e.code));
+  const pool=QUESTIONS.filter(q=>sigs.has(q.q+"||"+q.code));
+  if(!pool.length){alert("Historique d'erreurs vide.");return;}
+  // pré-remplit les filtres pour cohérence
+  startQuiz(pool);
 };
 
 function showQuestion(){
   clearInterval(timerId);
   const q=order[idx];
   $("q-counter").textContent=`Question ${idx+1}/${order.length}`;
-  $("q-cat").textContent=q.cat;
+  $("q-cat").textContent=`${CAT_EMOJI[q.cat]||""} ${q.cat}`;
+  $("q-lvl").textContent=LVL_LABEL[q.lvl]||("N"+q.lvl);
   $("q-score").textContent=`Score : ${score}`;
   $("progress-fill").style.width=(idx/order.length*100)+"%";
   $("q-text").textContent=q.q;
@@ -419,6 +444,18 @@ function showQuestion(){
   if(timePerQ>0){wrap.style.display="flex";timeLeft=timePerQ;updateTimer();timerId=setInterval(()=>{timeLeft--;updateTimer();if(timeLeft<=0){clearInterval(timerId);answer(-1,true);}},1000);}
   else wrap.style.display="none";
 }
+// clavier : A/B/C/D ou 1-4 pour répondre, Entrée pour suivant
+document.addEventListener("keydown",e=>{
+  if(quizScreen.classList.contains("hidden")) return;
+  const k=e.key.toLowerCase();
+  const map={a:0,b:1,c:2,d:3,"1":0,"2":1,"3":2,"4":3};
+  if(k in map && $("next-btn").classList.contains("hidden")){
+    const btns=[...document.querySelectorAll("#q-answers .btn")];
+    if(btns[map[k]]&&!btns[map[k]].disabled) answer(map[k]);
+  }else if(k==="enter"&&!$("next-btn").classList.contains("hidden")){
+    $("next-btn").click();
+  }
+});
 function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function updateTimer(){
   $("timer-text").textContent=timeLeft+"s";
@@ -456,7 +493,7 @@ $("next-btn").onclick=()=>{
 };
 function showEnd(){
   quizScreen.classList.add("hidden");endScreen.classList.remove("hidden");
-  const n=order.length, pct=Math.round(score/n*100);
+  const n=order.length, pct=n?Math.round(score/n*100):0;
   $("final-score").textContent=`${score}/${n}`;
   let msg=pct===100?"🏆 Perfect ! Niveau validé !":pct>=75?"🔥 Très bien, encore un petit effort !":pct>=50?"💪 Pas mal, revois les corrections ci-dessous.":"📚 Courage, relis les corrections et recommence !";
   $("final-msg").textContent=`${pct}% de réussite — ${msg}`;
@@ -464,18 +501,51 @@ function showEnd(){
   $("stat-time").textContent=`⏱ ${Math.floor(secs/60)}min ${secs%60}s`;
   $("stat-good").textContent=`✅ ${score} bonnes`;
   $("stat-bad").textContent=`❌ ${n-score} ratées`;
+  // stats par thème + sauvegarde progression
+  const byCat={};
+  results.forEach(r=>{const c=r.q.cat;byCat[c]=byCat[c]||{good:0,total:0};byCat[c].total++;if(r.ok)byCat[c].good++;});
+  const pc=$("per-cat");pc.innerHTML="";
+  Object.entries(byCat).forEach(([c,v])=>{
+    const s=document.createElement("span");s.className="badge";
+    const p=Math.round(v.good/v.total*100);
+    s.textContent=`${CAT_EMOJI[c]||""} ${c} : ${v.good}/${v.total} (${p}%)`;
+    pc.appendChild(s);
+  });
+  lastErrors=results.filter(r=>!r.ok).map(r=>({q:r.q.q,code:r.q.code,cat:r.q.cat}));
+  const st=loadStats();
+  Object.entries(byCat).forEach(([c,v])=>{
+    st.byCat[c]=st.byCat[c]||{good:0,total:0};
+    st.byCat[c].good+=v.good; st.byCat[c].total+=v.total;
+  });
+  // fusionne erreurs sans doublon
+  const sig=new Set((st.errors||[]).map(e=>e.q+"||"+e.code));
+  lastErrors.forEach(e=>{const k=e.q+"||"+e.code;if(!sig.has(k)){st.errors.push(e);sig.add(k);}});
+  // retire du stock celles réussies cette session
+  const okSig=new Set(results.filter(r=>r.ok).map(r=>r.q.q+"||"+r.q.code));
+  st.errors=(st.errors||[]).filter(e=>!okSig.has(e.q+"||"+e.code));
+  saveStats(st);
+  const rb=$("retry-errors-btn");
+  rb.textContent=lastErrors.length?`🔁 Rejouer mes ${lastErrors.length} erreurs de cette session`:"✅ Aucune erreur — parfait !";
+  rb.disabled=lastErrors.length===0;
+  rb.style.opacity=lastErrors.length===0?".5":"1";
   const rev=$("review");rev.innerHTML="";
   results.forEach((r,i)=>{
     const d=document.createElement("div");
     d.className="review-item "+(r.ok?"ok":"ko");
     const good=r.q.shuffled.find(a=>a.ok).t;
     const mine=r.timeout?"⏰ temps écoulé":escapeHtml(r.q.shuffled[r.choice]?.t??"—");
-    d.innerHTML=`<b>${i+1}. ${r.q.q}</b> ${r.q.code?`<pre>${escapeHtml(r.q.code)}</pre>`:""}<div>${r.ok?"✅":"❌"} Ta réponse : <b>${mine}</b> ${r.ok?"":`→ Bonne : <b>${escapeHtml(good)}</b>`}<br><span style="color:var(--muted)">${r.q.explain}</span></div>`;
+    d.innerHTML=`<b>${i+1}. ${r.q.q}</b> <span class="tag">${r.q.cat} · ${LVL_LABEL[r.q.lvl]||""}</span> ${r.q.code?`<pre>${escapeHtml(r.q.code)}</pre>`:""}<div>${r.ok?"✅":"❌"} Ta réponse : <b>${mine}</b> ${r.ok?"":`→ Bonne : <b>${escapeHtml(good)}</b>`}<br><span style="color:var(--muted)">${r.q.explain}</span></div>`;
     rev.appendChild(d);
   });
 }
-$("restart-btn").onclick=()=>$("start-btn").onclick();
-$("home-btn").onclick=()=>{endScreen.classList.add("hidden");startScreen.classList.remove("hidden");};
+$("retry-errors-btn").onclick=()=>{
+  if(!lastErrors.length) return;
+  const sig=new Set(lastErrors.map(e=>e.q+"||"+e.code));
+  const pool=QUESTIONS.filter(q=>sig.has(q.q+"||"+q.code));
+  startQuiz(pool.length?pool:QUESTIONS.filter(q=>sig.has(q.q+"||"+q.code)));
+};
+$("restart-btn").onclick=()=>startQuiz();
+$("home-btn").onclick=()=>{endScreen.classList.add("hidden");startScreen.classList.remove("hidden");refreshHomeStats();};
 </script>
 </body>
 </html>
